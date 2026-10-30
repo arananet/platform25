@@ -212,6 +212,12 @@ jobs:
           else
             echo "No blender/build_all.py in this tree yet, nothing to build."
           fi
+          if [ -f blender/render_lineup.py ]; then
+            blender --background --python blender/render_lineup.py
+            ls -la evidence/
+          else
+            echo "No blender/render_lineup.py in this tree yet, no lineup render."
+          fi
 
       - name: Install project dependencies
         id: deps
