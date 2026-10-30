@@ -1,0 +1,26 @@
+{
+  "schema": "anvil/envelope@1",
+  "from_station": "reviewer-security",
+  "to_station": "reviewer-tests",
+  "work_order_id": "wo-gh-1",
+  "artifact_path": "runs/wo-gh-1/reviewer-security.output.md",
+  "status": "executed",
+  "created_at": "2026-10-30T12:15:56.367749+00:00",
+  "review": {
+    "station": "reviewer-security",
+    "verdict": "pass",
+    "findings": [
+      "No network access, subprocess, eval/exec or dynamic imports in blender/*.py or tests/asset-factory.test.js. The scripts import only bpy, mathutils, the stdlib (sys, pathlib, math) and sibling modules, so no external assets are loaded (spec S6).",
+      "File writes go only to ROOT/assets and ROOT/evidence, with fixed names derived from module names. No user-controlled paths.",
+      "package.json: only the test glob changed, to \"tests/**/*.test.js\". It adds no dependencies and no install scripts.",
+      "Minor, non-blocking: build_all.py puts the blender/ directory first on sys.path, so a future file named like a stdlib module would shadow it. No current filename collides.",
+      "The review is written to reviews/wo-gh-1-reviewer-security.md. I did not run the scripts or tests; this is a static read of the code."
+    ]
+  },
+  "configured_model": "claude-sonnet-5-5",
+  "executor": {
+    "kind": "command",
+    "detail": "python3"
+  },
+  "executed_model": "claude-sonnet-5-5"
+}

@@ -1,6 +1,6 @@
 # Asset Factory
 
-Status: approved for build
+Status: revised, awaiting approval
 Slug: asset-factory
 
 ## Roles
@@ -28,7 +28,7 @@ All exports land in `assets/`. Node names inside each `.glb` are a contract: the
 
 Clean, bold, readable shapes with flat saturated procedural colors, no textures:
 
-- Character: warm coral body (torso and head), deep teal limbs, dark boots area not required; the figure must read clearly against the platforms.
+- Character: warm coral body (torso and head), deep teal limbs; the figure must read clearly against the platforms.
 - Ground block: warm gray stone sides with a grass green top face.
 - Floating platform: warm gray stone with a lighter top.
 - Spike: light steel gray.
@@ -40,7 +40,7 @@ Materials are created in the scripts with bpy (Principled BSDF base colors are e
 ## Pipeline contract
 
 - Scripts live under `blender/`, one module per asset plus `blender/build_all.py`, the single entry point that (re)builds every asset into `assets/`.
-- A second script, `blender/render_lineup.py`, imports all six assets into one scene, arranges them in a row on a ground plane with a camera and light, and renders a still to `evidence/asset-lineup.png` at 960x540 using the Cycles engine on CPU (headless safe), at most 64 samples.
+- A second script, `blender/render_lineup.py`, builds all six assets into one scene by calling the same per-asset build functions the asset modules use (it must not call a glTF importer, so S6 holds), arranges them in a row on a ground plane with a camera and light, and renders a still to `evidence/asset-lineup.png` at 960x540 using the Cycles engine on CPU (headless safe), at most 64 samples.
 - The workflow's deterministic step runs `blender --background --python blender/build_all.py` and then `blender/render_lineup.py` after the line, before the suite. The builder may also run them during its station work (Blender 4.5.15 is on PATH in the runner).
 - The scripts must run with `blender --background --python <script>` from the repo root and write paths relative to the repo root, creating `assets/` and `evidence/` when missing.
 

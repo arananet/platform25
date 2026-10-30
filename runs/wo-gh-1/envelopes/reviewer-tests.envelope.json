@@ -1,0 +1,26 @@
+{
+  "schema": "anvil/envelope@1",
+  "from_station": "reviewer-tests",
+  "to_station": "reviewer-architecture",
+  "work_order_id": "wo-gh-1",
+  "artifact_path": "runs/wo-gh-1/reviewer-tests.output.md",
+  "status": "executed",
+  "created_at": "2026-10-30T12:16:08.436077+00:00",
+  "review": {
+    "station": "reviewer-tests",
+    "verdict": "pass",
+    "findings": [
+      "`npm test` ran 6 tests (S1 to S6): 6 pass, 0 fail, 0 skipped. Each test is named for its spec scenario.",
+      "S1 to S4 parse the real glb header and JSON chunk (magic, length, chunk type) from assets/*.glb. They check the six player part names (exactly one node each), the node name of each of the other five assets, and the 800 B to 5 MB size bounds.",
+      "S5 checks the PNG signature and the IHDR width and height (960x540) of evidence/asset-lineup.png. S6 scans every file under blender/ for import_scene, image.load and bpy.data.images.load, and rejects binary files.",
+      "Non-blocking gaps: S3 does not check that the named node is the only one. R4 determinism and the Cycles/64-sample limit have no tests, and the spec does not require any. A stray __pycache__ under blender/ would fail S6.",
+      "The review is written to reviews/wo-gh-1-reviewer-tests.md."
+    ]
+  },
+  "configured_model": "claude-sonnet-5-5",
+  "executor": {
+    "kind": "command",
+    "detail": "python3"
+  },
+  "executed_model": "claude-sonnet-5-5"
+}

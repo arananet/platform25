@@ -1,0 +1,50 @@
+
+> platform25@0.1.0 test
+> node --test "tests/**/*.test.js"
+
+TAP version 13
+# Subtest: S1: every asset exists and is non-empty
+ok 1 - S1: every asset exists and is non-empty
+  ---
+  duration_ms: 1.1708
+  type: 'test'
+  ...
+# Subtest: S2: player.glb has its six named parts as separate nodes
+ok 2 - S2: player.glb has its six named parts as separate nodes
+  ---
+  duration_ms: 1.171772
+  type: 'test'
+  ...
+# Subtest: S3: each platform set glb has a node with its own name
+ok 3 - S3: each platform set glb has a node with its own name
+  ---
+  duration_ms: 0.603885
+  type: 'test'
+  ...
+# Subtest: S4: every glb is between 800 bytes and 5 MB
+ok 4 - S4: every glb is between 800 bytes and 5 MB
+  ---
+  duration_ms: 0.404149
+  type: 'test'
+  ...
+# Subtest: S5: lineup render is a 960x540 PNG
+ok 5 - S5: lineup render is a 960x540 PNG
+  ---
+  duration_ms: 1.321032
+  type: 'test'
+  ...
+# Subtest: S6: no script imports external assets and no binary files sit under blender/
+ok 6 - S6: no script imports external assets and no binary files sit under blender/
+  ---
+  duration_ms: 1.571703
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 71.936965

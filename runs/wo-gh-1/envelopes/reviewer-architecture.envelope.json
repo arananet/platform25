@@ -1,0 +1,26 @@
+{
+  "schema": "anvil/envelope@1",
+  "from_station": "reviewer-architecture",
+  "to_station": "reviewer-design",
+  "work_order_id": "wo-gh-1",
+  "artifact_path": "runs/wo-gh-1/reviewer-architecture.output.md",
+  "status": "executed",
+  "created_at": "2026-10-30T12:16:29.493571+00:00",
+  "review": {
+    "station": "reviewer-architecture",
+    "verdict": "changes_requested",
+    "findings": [
+      "The code fits the standing decisions in brain/project.md. There is one module per asset, with blender/build_all.py as the single entry point. render_lineup.py reuses build_all.ASSETS. Only primitives and procedural materials are used. The player is six named parts. Tests parse the glb files without Blender. There is no importer or image loader anywhere in blender/.",
+      "The approved contract was edited inside the feature change. .openspec/specs/asset-factory/spec.md is modified in the working tree. Its status changed from 'approved for build' to 'revised, awaiting approval'. The character look line and the render_lineup.py import clause were also rewritten. The builder and reviewer stations do not own the spec, so the code is now built against a spec that is no longer approved. Either re-approve the revised spec at the spec-writer stage or the human gate, or revert the edit and fit the code to the approved text.",
+      "package.json changes the test script from 'node --test tests/' to 'node --test \"tests/**/*.test.js\"'. The change is reasonable, but the spec and work order do not mention it. Record it.",
+      "The project has no brain/decisions directory. The only decision file is .anvil-factory/brain/decisions/0001-composable-stations.md, which concerns ANVIL stations and does not apply to the asset code. The review used the standing decisions in brain/project.md instead. I did not run Blender 4.5.15 in this station.",
+      "The review is written to reviews/wo-gh-1-reviewer-architecture.md."
+    ]
+  },
+  "configured_model": "claude-sonnet-5-5",
+  "executor": {
+    "kind": "command",
+    "detail": "python3"
+  },
+  "executed_model": "claude-sonnet-5-5"
+}
