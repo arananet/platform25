@@ -1,0 +1,29 @@
+{
+  "schema": "anvil/envelope@1",
+  "from_station": "reviewer-spec",
+  "to_station": "reviewer-security",
+  "work_order_id": "wo-gh-2",
+  "artifact_path": "runs/wo-gh-2/reviewer-spec.output.md",
+  "status": "executed",
+  "created_at": "2026-10-30T17:42:45.152054+00:00",
+  "review": {
+    "station": "reviewer-spec",
+    "verdict": "pass",
+    "findings": [
+      "`npm test` gives 16/16 passing, including the browser check (S1-S3, S5, S6) and the unchanged asset factory suite. I did not run `npm run build` separately; the browser test runs it and passed.",
+      "Course layout in src/course.js matches the spec. It has 9 coins. The flat opening runs x 0-14. Coin 1 is at x=5, y=1.2. A platform with top 1.2 sits over a shallow pit with a coin above it. Spikes are at x=23 and x=24. The gap is x 30-33, exactly 3 units. Rising platforms have tops 0.8, 1.6 and 2.4, with two more coins. The flag is at x=58. All six asset paths are referenced, and collision uses the placement boxes.",
+      "Physics matches the spec. The fixed step is 1/120 s with an accumulator. Run speed is 6, gravity -22, and jump velocity 8.6 gives about 1.68 height and about 4.7 units of reach. Landing, side stops, the spike reset and the y < -6 reset all work. Resets return to the last grounded position with coins kept. The timer starts on first input, keeps running across resets, and stops at the goal. warpTo keeps coins and timer.",
+      "The limb pivots are at each limb's top end and addressed by the contracted names (arm_left, arm_right, leg_left, leg_right). Arms and legs swing in opposite phase, amplitude scales with speed, the pose is tucked when airborne, and it eases to rest when idle.",
+      "Camera (z=9, y=2.4, lookahead), two backdrop depths (z=-5 and z=-10), HUD 'Coins n / total' plus timer, the completion overlay with coins, time and an R hint, R restart only after finishing, and all required getState fields are present.",
+      "The browser test follows the spec's steps. It uses warpTo once, then real key input to finish, requires zero console and page errors, and saves the three 1280x720 screenshots. play-goal.png shows the overlay with 2 / 9 coins and 2.59 s.",
+      "Non-blocking: no browser-level assertion covers S4 (spike or gap reset). The spec lists S4 as a scenario, and only the physics test file can cover it.",
+      "Non-blocking: the backdrop (#a7b5b7, #bcc6c7) and sky (#d9e2e6) colors are derived tints rather than exact token values. The spec says 'derived from' and 'lightened', so this is acceptable. Reviewer-design should judge the large grey backdrop blocks, which look low-contrast in play-goal.png."
+    ]
+  },
+  "configured_model": "claude-sonnet-5-5",
+  "executor": {
+    "kind": "command",
+    "detail": "python3"
+  },
+  "executed_model": "claude-sonnet-5-5"
+}

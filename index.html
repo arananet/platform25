@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Platform 2.5</title>
+</head>
+<body>
+  <main id="game" aria-label="Platform 2.5 game"></main>
+  <header><div class="brand">PLATFORM <strong>2.5</strong><small>A little course. A running start.</small></div><div class="stats"><span id="coins">Coins 0 / 9</span><span id="timer">0.00 s</span></div></header>
+  <footer><span>A / D or ← / → <b>Run</b></span><span>Space / W <b>Jump</b></span><span>Reach the coral flag</span></footer>
+  <div id="loading" role="status">Building your little world…</div>
+  <section id="completion" hidden aria-label="Course complete"><div><p class="eyebrow">FINISH LINE / 60 METRES</p><h1>Course complete.</h1><p id="result"></p><p class="restart">Press <kbd>R</kbd> to run again</p></div></section>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
