@@ -1,7 +1,9 @@
 # Asset Factory
 
-Status: revised, awaiting approval
+Status: approved for build
 Slug: asset-factory
+
+Revision note (operator, 2026-10-30): the round 1 revision of this spec is approved as committed. It aligns two clauses with the implementation (the render script builds the lineup from the same per-asset build functions and never calls a glTF importer, and the character look line drops a phrase the model never had). The asset list, the naming contract and scenarios S1 to S6 are unchanged.
 
 ## Roles
 - implementer: builds the change described here
@@ -43,6 +45,7 @@ Materials are created in the scripts with bpy (Principled BSDF base colors are e
 - A second script, `blender/render_lineup.py`, builds all six assets into one scene by calling the same per-asset build functions the asset modules use (it must not call a glTF importer, so S6 holds), arranges them in a row on a ground plane with a camera and light, and renders a still to `evidence/asset-lineup.png` at 960x540 using the Cycles engine on CPU (headless safe), at most 64 samples.
 - The workflow's deterministic step runs `blender --background --python blender/build_all.py` and then `blender/render_lineup.py` after the line, before the suite. The builder may also run them during its station work (Blender 4.5.15 is on PATH in the runner).
 - The scripts must run with `blender --background --python <script>` from the repo root and write paths relative to the repo root, creating `assets/` and `evidence/` when missing.
+- The project test script in `package.json` runs `node --test` over `tests/**/*.test.js` (recorded here per the round 1 architecture review; the glob form is what the suite uses).
 
 ## Requirements
 
