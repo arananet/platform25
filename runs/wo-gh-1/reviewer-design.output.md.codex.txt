@@ -1,4 +1,4 @@
-WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("/tmp/anvil-codex-home-a8xgimob"))
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("/tmp/anvil-codex-home-1lyc6zwb"))
 Reading additional input from stdin...
 OpenAI Codex v0.166.0
 --------
@@ -9,7 +9,7 @@ approval: never
 sandbox: danger-full-access
 reasoning effort: none
 reasoning summaries: none
-session id: 01a18cbd-781d-7243-9872-8a3cb189f524
+session id: 01a18cc6-c2e2-7732-8295-72724fe9ffe1
 --------
 user
 You are executing an ANVIL reviewer station packet inside this repository. You are read only: inspect the files the packet refers to, judge the work against the packet, and do not change anything. The wrapper verifies the tree is unchanged after your run and fails this station if it is not.
@@ -109,6 +109,11 @@ Done looks like:
 Palette and proportions are stated in the spec. No downloaded models, textures or images. No deployment in this work order; the run stops at the human gate with the lineup render as evidence.
 
 GitHub issue: https://github.com/arananet/platform25/issues/1
+
+Loopback round 2 directives (operator, from the round 1 reviews):
+- The spec revision produced in round 1 is operator approved: .openspec/specs/asset-factory/spec.md as committed for this round is the approved contract. Do not modify anything under .openspec/specs/ in this round.
+- reviewer-design finding: author design/DESIGN.md and design/tokens.json for this project, documenting the palette, the shape language and the quality bars from the spec Look section, so design review has its documented anchor. The tokens must match the colors the Blender scripts actually use.
+- Keep the assets, the scripts and the tests as they are unless a directive above requires a change: scenarios S1 to S6 already pass and must keep passing.
 - risk_hints: 
 - status: new
 
@@ -123,6 +128,131 @@ GitHub issue: https://github.com/arananet/platform25/issues/1
 - reviewer-tests: executed
 - reviewer-architecture: executed
 
+## Project design
+
+### Design tokens
+
+```json
+{
+  "$description": "Platform 2.5 asset palette. 'linear' values are the exact Principled BSDF Base Color values used in blender/*.py; 'hex' is the sRGB equivalent.",
+  "color": {
+    "coral": {
+      "linear": [
+        0.95,
+        0.19,
+        0.12
+      ],
+      "hex": "#f97961",
+      "use": "player torso and head (blender/player.py)"
+    },
+    "teal": {
+      "linear": [
+        0.015,
+        0.24,
+        0.23
+      ],
+      "hex": "#218684",
+      "use": "player arms and legs (blender/player.py)"
+    },
+    "stone": {
+      "linear": [
+        0.36,
+        0.32,
+        0.27
+      ],
+      "hex": "#a2998e",
+      "use": "ground block sides, floating platform body"
+    },
+    "grass": {
+      "linear": [
+        0.18,
+        0.55,
+        0.065
+      ],
+      "hex": "#76c448",
+      "use": "ground block top face"
+    },
+    "stoneTop": {
+      "linear": [
+        0.63,
+        0.58,
+        0.48
+      ],
+      "hex": "#d0c8b8",
+      "use": "floating platform top"
+    },
+    "steel": {
+      "linear": [
+        0.65,
+        0.72,
+        0.77
+      ],
+      "hex": "#d3dde3",
+      "use": "spike",
+      "metallic": 0.55
+    },
+    "gold": {
+      "linear": [
+        1.0,
+        0.57,
+        0.025
+      ],
+      "hex": "#ffc72c",
+      "use": "coin",
+      "metallic": 0.65,
+      "emissionStrength": 0.2
+    },
+    "flagPole": {
+      "linear": [
+        0.88,
+        0.91,
+        0.93
+      ],
+      "hex": "#f1f5f7",
+      "use": "goal flag pole",
+      "metallic": 0.15
+    },
+    "flagCoral": {
+      "linear": [
+        0.95,
+        0.12,
+        0.075
+      ],
+      "hex": "#f9614d",
+      "use": "goal flag cloth"
+    },
+    "backdrop": {
+      "linear": [
+        0.055,
+        0.075,
+        0.1
+      ],
+      "hex": "#424d59",
+      "use": "lineup render ground plane (blender/render_lineup.py)"
+    }
+  },
+  "material": {
+    "roughness": 0.48,
+    "textures": false,
+    "shader": "Principled BSDF, flat procedural base color"
+  },
+  "shape": {
+    "language": "primitives and modifiers only; bold boxes and cylinders with small bevels",
+    "bevel": {
+      "torso": 0.045,
+      "head": 0.065
+    }
+  },
+  "render": {
+    "width": 960,
+    "height": 540,
+    "engine": "CYCLES",
+    "device": "CPU",
+    "maxSamples": 64
+  }
+}
+```
+
 ## Output contract
 
 Answer with a single JSON object and nothing else, in exactly this shape:
@@ -130,15 +260,17 @@ Answer with a single JSON object and nothing else, in exactly this shape:
 The verdict must be one of: pass, fail, changes_requested. Findings must be concrete and checkable against the spec, the code and the tests.
 
 codex
-I’ll read the asset contract, check for the project’s design system, and inspect the asset output without changing any files.
+I’ll read the asset contract, design system, and Blender output files without changing the repository.
 
 exec
-/bin/bash -lc 'cat .openspec/specs/asset-factory/spec.md' in /home/runner/work/platform25/platform25
+/bin/bash -lc 'cat .openspec/specs/asset-factory/spec.md; cat design/DESIGN.md; cat design/tokens.json' in /home/runner/work/platform25/platform25
  succeeded in 0ms:
 # Asset Factory
 
-Status: revised, awaiting approval
+Status: approved for build
 Slug: asset-factory
+
+Revision note (operator, 2026-10-30): the round 1 revision of this spec is approved as committed. It aligns two clauses with the implementation (the render script builds the lineup from the same per-asset build functions and never calls a glTF importer, and the character look line drops a phrase the model never had). The asset list, the naming contract and scenarios S1 to S6 are unchanged.
 
 ## Roles
 - implementer: builds the change described here
@@ -180,6 +312,7 @@ Materials are created in the scripts with bpy (Principled BSDF base colors are e
 - A second script, `blender/render_lineup.py`, builds all six assets into one scene by calling the same per-asset build functions the asset modules use (it must not call a glTF importer, so S6 holds), arranges them in a row on a ground plane with a camera and light, and renders a still to `evidence/asset-lineup.png` at 960x540 using the Cycles engine on CPU (headless safe), at most 64 samples.
 - The workflow's deterministic step runs `blender --background --python blender/build_all.py` and then `blender/render_lineup.py` after the line, before the suite. The builder may also run them during its station work (Blender 4.5.15 is on PATH in the runner).
 - The scripts must run with `blender --background --python <script>` from the repo root and write paths relative to the repo root, creating `assets/` and `evidence/` when missing.
+- The project test script in `package.json` runs `node --test` over `tests/**/*.test.js` (recorded here per the round 1 architecture review; the glob form is what the suite uses).
 
 ## Requirements
 
@@ -209,31 +342,589 @@ Materials are created in the scripts with bpy (Principled BSDF base colors are e
 
 ### Scenario: No external assets sneak in
 - S6: Given the scripts under `blender/`, when the tests scan them, then none of them calls an importer or image loader (no `import_scene`, no `image.load`, no `bpy.data.images.load`), and no file under `blender/` is a binary asset.
+# Platform 2.5 design
+
+Anchor for design review of the asset factory. Source of truth for intent is
+`.openspec/specs/asset-factory/spec.md` (Look section); machine-readable values are in
+`design/tokens.json`, which match the colors used in `blender/*.py`.
+
+## Shape language
+- Clean, bold, readable silhouettes built only from bpy primitives (boxes, cylinders, cones) and modifiers such as bevel.
+- Chunky proportions; small bevels soften edges (torso 0.045, head 0.065) without adding detail.
+- The character is one standing figure of six separate named parts: torso, head, arm_left, arm_right, leg_left, leg_right.
+- Keep the head above the torso, arms beside it and legs below it; limb pivots sit at their top ends for animation. The standing figure is roughly 1.8 units tall.
+- Ground is a solid 2 wide × 1 tall × 2 deep block; the floating platform is a 2 wide × 0.4 tall × 1.2 deep slab.
+- The spike is a sharp cone or pyramid on a small base, about 0.8 tall, with an unmistakable hazard silhouette.
+- The coin is an upright disc about 0.6 across, with flat faces along exported ±Z. The goal is a pole about 2.2 tall with a triangular flag at the top.
+
+## Palette
+Flat, saturated, procedural colors (Principled BSDF base colors). Values are Blender linear; hex is sRGB.
+Use the linear RGB triples in `tokens.json` for shader inputs, with alpha 1.
+The hex swatches describe the same base colors in sRGB; lighting and the lineup's
+AgX view transform affect their rendered appearance. All materials use roughness
+0.48; metallic and emission strength default to zero unless specified in the tokens.
+
+| Asset | Part | Token | Hex |
+|---|---|---|---|
+| Character | torso, head | coral | #f97961 |
+| Character | arms, legs | teal | #218684 |
+| Ground block | sides | stone | #a2998e |
+| Ground block | top face | grass | #76c448 |
+| Floating platform | body | stone | #a2998e |
+| Floating platform | top | stoneTop (lighter) | #d0c8b8 |
+| Spike | all | steel (light steel gray) | #d3dde3 |
+| Coin | all | gold, metallic 0.65, emission 0.2 | #ffc72c |
+| Goal flag | pole | flagPole (white) | #f1f5f7 |
+| Goal flag | cloth | flagCoral (coral red) | #f9614d |
+| Lineup | ground plane | backdrop | #424d59 |
+
+## Quality bars
+- Readability: the coral/teal figure must stand out clearly against the stone and grass platforms.
+- Coin has a slight emissive feel from material values only; no bloom dependency.
+- No image textures, downloaded models or external files; scripts never import meshes or load images.
+- Every asset exports to `assets/*.glb` with its contracted node names, between 800 bytes and 5 MB.
+- The lineup render shows all six assets in a row: `evidence/asset-lineup.png`, 960x540, Cycles CPU, at most 64 samples.
+- Review the lineup for distinct silhouettes, visible contrasting top faces and a clearly readable hazard, pickup and goal. Scenario tests S1–S6 check the export and evidence contracts; visual acceptance belongs to the separate reviewer and human gate.
+{
+  "$description": "Platform 2.5 asset palette. 'linear' values are the exact Principled BSDF Base Color values used in blender/*.py; 'hex' is the sRGB equivalent.",
+  "color": {
+    "coral": {
+      "linear": [
+        0.95,
+        0.19,
+        0.12
+      ],
+      "hex": "#f97961",
+      "use": "player torso and head (blender/player.py)"
+    },
+    "teal": {
+      "linear": [
+        0.015,
+        0.24,
+        0.23
+      ],
+      "hex": "#218684",
+      "use": "player arms and legs (blender/player.py)"
+    },
+    "stone": {
+      "linear": [
+        0.36,
+        0.32,
+        0.27
+      ],
+      "hex": "#a2998e",
+      "use": "ground block sides, floating platform body"
+    },
+    "grass": {
+      "linear": [
+        0.18,
+        0.55,
+        0.065
+      ],
+      "hex": "#76c448",
+      "use": "ground block top face"
+    },
+    "stoneTop": {
+      "linear": [
+        0.63,
+        0.58,
+        0.48
+      ],
+      "hex": "#d0c8b8",
+      "use": "floating platform top"
+    },
+    "steel": {
+      "linear": [
+        0.65,
+        0.72,
+        0.77
+      ],
+      "hex": "#d3dde3",
+      "use": "spike",
+      "metallic": 0.55
+    },
+    "gold": {
+      "linear": [
+        1.0,
+        0.57,
+        0.025
+      ],
+      "hex": "#ffc72c",
+      "use": "coin",
+      "metallic": 0.65,
+      "emissionStrength": 0.2
+    },
+    "flagPole": {
+      "linear": [
+        0.88,
+        0.91,
+        0.93
+      ],
+      "hex": "#f1f5f7",
+      "use": "goal flag pole",
+      "metallic": 0.15
+    },
+    "flagCoral": {
+      "linear": [
+        0.95,
+        0.12,
+        0.075
+      ],
+      "hex": "#f9614d",
+      "use": "goal flag cloth"
+    },
+    "backdrop": {
+      "linear": [
+        0.055,
+        0.075,
+        0.1
+      ],
+      "hex": "#424d59",
+      "use": "lineup render ground plane (blender/render_lineup.py)"
+    }
+  },
+  "material": {
+    "roughness": 0.48,
+    "textures": false,
+    "shader": "Principled BSDF, flat procedural base color"
+  },
+  "shape": {
+    "language": "primitives and modifiers only; bold boxes and cylinders with small bevels",
+    "bevel": {
+      "torso": 0.045,
+      "head": 0.065
+    }
+  },
+  "render": {
+    "width": 960,
+    "height": 540,
+    "engine": "CYCLES",
+    "device": "CPU",
+    "maxSamples": 64
+  }
+}
 
 exec
-/bin/bash -lc "rg --files -g 'DESIGN.md' -g 'tokens.json' -g '*lineup*' -g '*.py' -g 'AGENTS.md' -g '*.glb' -g '*asset*' design blender assets evidence tests" in /home/runner/work/platform25/platform25
- exited 2 in 0ms:
-rg: design: No such file or directory (os error 2)
+/bin/bash -lc 'rg --files blender assets evidence tests; rg --files -g AGENTS.md' in /home/runner/work/platform25/platform25
+ exited 1 in 0ms:
 tests/asset-factory.test.js
-assets/player.glb
-assets/spike.glb
-assets/coin.glb
-assets/goal_flag.glb
+evidence/asset-lineup.png
 assets/ground_block.glb
 assets/platform_floating.glb
-blender/spike.py
-blender/render_lineup.py
-evidence/asset-lineup.png
-blender/goal_flag.py
+assets/coin.glb
+assets/goal_flag.glb
+assets/spike.glb
+assets/player.glb
 blender/platform_floating.py
+blender/render_lineup.py
+blender/spike.py
+blender/build_all.py
+blender/goal_flag.py
 blender/ground_block.py
 blender/coin.py
-blender/build_all.py
 blender/player.py
 blender/common.py
 
+exec
+/bin/bash -lc 'cat blender/*.py tests/asset-factory.test.js' in /home/runner/work/platform25/platform25
+ succeeded in 0ms:
+"""Run with blender --background --python blender/build_all.py."""
+import sys
+from pathlib import Path
+
+# Keep the script directory text-only, including after module imports.
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import player
+import ground_block
+import platform_floating
+import spike
+import coin
+import goal_flag
+from common import export, reset
+
+ASSETS = (player, ground_block, platform_floating, spike, coin, goal_flag)
+
+
+def main():
+    for module in ASSETS:
+        reset()
+        export(module.__name__, module.build())
+
+
+if __name__ == '__main__':
+    main()
+from math import pi
+from common import cylinder, material
+
+
+def build():
+    gold = material('Emissive gold', (1.0, 0.57, 0.025), metallic=0.65, emission=0.2)
+    return [cylinder('coin', 0.3, 0.085, (0, 0, 0.3), gold,
+                     rotation=(pi / 2, 0, 0))]
+"""Primitive-only modeling helpers. Blender Z-up becomes glTF Y-up."""
+from pathlib import Path
+import bpy
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def reset():
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+
+
+def material(name, color, metallic=0.0, emission=0.0):
+    mat = bpy.data.materials.new(name)
+    mat.diffuse_color = (*color, 1)
+    mat.use_nodes = True
+    shader = mat.node_tree.nodes.get('Principled BSDF')
+    shader.inputs['Base Color'].default_value = (*color, 1)
+    shader.inputs['Roughness'].default_value = 0.48
+    shader.inputs['Metallic'].default_value = metallic
+    shader.inputs['Emission Color'].default_value = (*color, 1)
+    shader.inputs['Emission Strength'].default_value = emission
+    return mat
+
+
+def finish(obj, name, mat):
+    obj.name = name
+    obj.data.materials.append(mat)
+    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
+    return obj
+
+
+def box(name, dimensions, location, mat, bevel=0.0, top=None):
+    bpy.ops.mesh.primitive_cube_add(size=1, location=location)
+    obj = bpy.context.object
+    obj.dimensions = dimensions
+    finish(obj, name, mat)
+    if top:
+        obj.data.materials.append(top)
+        for face in obj.data.polygons:
+            if face.normal.z > 0.5:
+                face.material_index = 1
+    if bevel:
+        modifier = obj.modifiers.new('Soft edges', 'BEVEL')
+        modifier.width = bevel
+        modifier.segments = 2
+    return obj
+
+
+def cylinder(name, radius, depth, location, mat, vertices=32, rotation=(0, 0, 0)):
+    bpy.ops.mesh.primitive_cylinder_add(vertices=vertices, radius=radius, depth=depth,
+                                      location=location, rotation=rotation)
+    return finish(bpy.context.object, name, mat)
+
+
+def join(name, objects):
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in objects:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = objects[0]
+    bpy.ops.object.join()
+    objects[0].name = name
+    return [objects[0]]
+
+
+def pivot(obj, location):
+    bpy.context.scene.cursor.location = location
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
+
+
+def export(name, objects):
+    directory = ROOT / 'assets'
+    directory.mkdir(exist_ok=True)
+    bpy.ops.object.select_all(action='DESELECT')
+    for obj in objects:
+        obj.select_set(True)
+    bpy.ops.export_scene.gltf(filepath=str(directory / f'{name}.glb'),
+                              export_format='GLB', use_selection=True,
+                              export_apply=True, export_yup=True,
+                              export_animations=False, export_cameras=False,
+                              export_lights=False)
+from math import pi
+from common import cylinder, join, material
+import bpy
+
+
+def build():
+    white = material('White pole', (0.88, 0.91, 0.93), metallic=0.15)
+    coral = material('Coral flag', (0.95, 0.12, 0.075))
+    pole = cylinder('goal_flag', 0.035, 2.2, (0, 0, 1.1), white)
+    # A three-sided cylinder makes a solid triangular flag from a primitive.
+    flag = cylinder('Flag triangle', 1, 0.035, (0.25, 0, 1.89), coral,
+                    vertices=3, rotation=(pi / 2, 0, 0))
+    flag.dimensions = (0.75, 0.035, 0.52)
+    bpy.context.view_layer.objects.active = flag
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    return join('goal_flag', [pole, flag])
+from common import box, material
+
+
+def build():
+    stone = material('Warm stone', (0.36, 0.32, 0.27))
+    grass = material('Grass green', (0.18, 0.55, 0.065))
+    return [box('ground_block', (2, 2, 1), (0, 0, 0.5), stone, top=grass)]
+from common import box, material
+
+
+def build():
+    stone = material('Platform stone', (0.36, 0.32, 0.27))
+    top = material('Light stone top', (0.63, 0.58, 0.48))
+    return [box('platform_floating', (2, 1.2, 0.4), (0, 0, 0.2), stone, top=top)]
+"""Six articulated pieces, standing 1.8 units tall."""
+from common import box, material, pivot
+
+
+def build():
+    coral = material('Warm coral', (0.95, 0.19, 0.12))
+    teal = material('Deep teal', (0.015, 0.24, 0.23))
+    parts = [box('torso', (0.58, 0.34, 0.62), (0, 0, 1.05), coral, 0.045),
+             box('head', (0.44, 0.38, 0.44), (0, 0, 1.58), coral, 0.065)]
+    for side, x in [('left', -1), ('right', 1)]:
+        arm = box(f'arm_{side}', (0.19, 0.27, 0.59),
+                  (x * 0.405, 0, 1.025), teal, 0.035)
+        pivot(arm, (x * 0.405, 0, 1.32))
+        leg = box(f'leg_{side}', (0.23, 0.31, 0.74),
+                  (x * 0.155, 0, 0.37), teal, 0.035)
+        pivot(leg, (x * 0.155, 0, 0.74))
+        parts.extend([arm, leg])
+    return parts
+"""Rebuild the six assets with their shared builders and render review evidence."""
+import sys
+from pathlib import Path
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import bpy
+from mathutils import Vector
+from build_all import ASSETS
+from common import ROOT, box, material, reset
+
+
+def aim(obj, target):
+    obj.rotation_euler = (Vector(target) - obj.location).to_track_quat('-Z', 'Y').to_euler()
+
+
+def main():
+    reset()
+    positions = (-5.2, -2.8, 0, 2.2, 3.8, 5.4)
+    for module, x in zip(ASSETS, positions):
+        for obj in module.build():
+            obj.location.x += x
+            if module.__name__ == 'platform_floating':
+                obj.location.z += 0.55
+    box('Studio floor', (200, 200, 0.1), (0, 0, -0.055),
+        material('Backdrop', (0.055, 0.075, 0.10)))
+    bpy.ops.object.camera_add(location=(7, -19, 9))
+    camera = bpy.context.object
+    aim(camera, (0.25, 0, 0.85))
+    camera.data.type = 'ORTHO'
+    camera.data.ortho_scale = 14.5
+    scene = bpy.context.scene
+    scene.camera = camera
+    for location, power, size in [((-3, -6, 9), 2200, 8), ((4, 3, 7), 1700, 6)]:
+        bpy.ops.object.light_add(type='AREA', location=location)
+        light = bpy.context.object
+        light.data.energy = power
+        light.data.shape = 'DISK'
+        light.data.size = size
+        aim(light, (0, 0, 0))
+    scene.world = bpy.data.worlds.new('Studio world')
+    scene.world.use_nodes = True
+    scene.world.node_tree.nodes['Background'].inputs[0].default_value = (0.3, 0.3, 0.3, 1)
+    scene.world.node_tree.nodes['Background'].inputs[1].default_value = 0.5
+    scene.render.engine = 'CYCLES'
+    scene.cycles.device = 'CPU'
+    scene.cycles.samples = 32
+    scene.cycles.seed = 0
+    scene.cycles.use_denoising = True
+    scene.render.resolution_x = 960
+    scene.render.resolution_y = 540
+    scene.render.resolution_percentage = 100
+    scene.render.image_settings.file_format = 'PNG'
+    scene.view_settings.view_transform = 'AgX'
+    directory = ROOT / 'evidence'
+    directory.mkdir(exist_ok=True)
+    scene.render.filepath = str(directory / 'asset-lineup.png')
+    bpy.ops.render.render(write_still=True)
+
+
+if __name__ == '__main__':
+    main()
+import bpy
+from common import box, finish, join, material
+
+
+def build():
+    steel = material('Light steel', (0.65, 0.72, 0.77), metallic=0.55)
+    base = box('spike', (0.64, 0.64, 0.1), (0, 0, 0.05), steel)
+    bpy.ops.mesh.primitive_cone_add(vertices=4, radius1=0.4, radius2=0,
+                                    depth=0.7, location=(0, 0, 0.45))
+    tip = finish(bpy.context.object, 'Spike tip', steel)
+    return join('spike', [base, tip])
+// Tests for the asset factory spec (.openspec/specs/asset-factory/spec.md), scenarios S1 to S6.
+// They read the exported files only; no Blender is needed at test time.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const assetsDir = path.join(root, 'assets');
+const blenderDir = path.join(root, 'blender');
+const lineupPath = path.join(root, 'evidence', 'asset-lineup.png');
+
+const ASSETS = {
+  'player.glb': ['torso', 'head', 'arm_left', 'arm_right', 'leg_left', 'leg_right'],
+  'ground_block.glb': ['ground_block'],
+  'platform_floating.glb': ['platform_floating'],
+  'spike.glb': ['spike'],
+  'coin.glb': ['coin'],
+  'goal_flag.glb': ['goal_flag'],
+};
+
+function readGltfJson(file) {
+  const buf = fs.readFileSync(path.join(assetsDir, file));
+  assert.equal(buf.toString('ascii', 0, 4), 'glTF', `${file} is not a binary glTF`);
+  const length = buf.readUInt32LE(8);
+  assert.equal(length, buf.length, `${file} header length mismatch`);
+  const chunkLength = buf.readUInt32LE(12);
+  assert.equal(buf.readUInt32LE(16), 0x4e4f534a, `${file} first chunk is not JSON`);
+  return JSON.parse(buf.toString('utf8', 20, 20 + chunkLength));
+}
+
+function nodeNames(file) {
+  return (readGltfJson(file).nodes ?? []).map((n) => n.name);
+}
+
+test('S1: every asset exists and is non-empty', () => {
+  for (const file of Object.keys(ASSETS)) {
+    const p = path.join(assetsDir, file);
+    assert.ok(fs.existsSync(p), `${file} is missing`);
+    assert.ok(fs.statSync(p).size > 0, `${file} is empty`);
+  }
+});
+
+test('S2: player.glb has its six named parts as separate nodes', () => {
+  const names = nodeNames('player.glb');
+  for (const part of ASSETS['player.glb']) {
+    assert.equal(names.filter((n) => n === part).length, 1, `expected exactly one node named ${part}`);
+  }
+});
+
+test('S3: each platform set glb has a node with its own name', () => {
+  for (const [file, expected] of Object.entries(ASSETS)) {
+    if (file === 'player.glb') continue;
+    assert.ok(nodeNames(file).includes(expected[0]), `${file} has no node named ${expected[0]}`);
+  }
+});
+
+test('S4: every glb is between 800 bytes and 5 MB', () => {
+  for (const file of Object.keys(ASSETS)) {
+    const size = fs.statSync(path.join(assetsDir, file)).size;
+    assert.ok(size >= 800, `${file} is too small (${size} bytes)`);
+    assert.ok(size <= 5 * 1024 * 1024, `${file} is too large (${size} bytes)`);
+  }
+});
+
+test('S5: lineup render is a 960x540 PNG', () => {
+  assert.ok(fs.existsSync(lineupPath), 'evidence/asset-lineup.png is missing');
+  const buf = fs.readFileSync(lineupPath);
+  assert.deepEqual([...buf.subarray(0, 8)], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 'not a PNG');
+  assert.equal(buf.toString('ascii', 12, 16), 'IHDR');
+  assert.equal(buf.readUInt32BE(16), 960, 'width');
+  assert.equal(buf.readUInt32BE(20), 540, 'height');
+});
+
+test('S6: no script imports external assets and no binary files sit under blender/', () => {
+  assert.ok(fs.existsSync(blenderDir), 'blender/ is missing');
+  const files = fs.readdirSync(blenderDir, { recursive: true, withFileTypes: true }).filter((e) => e.isFile());
+  assert.ok(files.length > 0, 'blender/ has no files');
+  const banned = [/import_scene/, /image\.load/, /bpy\.data\.images\.load/];
+  for (const entry of files) {
+    const p = path.join(entry.parentPath ?? entry.path, entry.name);
+    const rel = path.relative(root, p);
+    const buf = fs.readFileSync(p);
+    assert.ok(!buf.includes(0), `${rel} looks like a binary file`);
+    assert.ok(/\.(py|md|txt|json)$/.test(entry.name), `${rel} is not a script or text file`);
+    const text = buf.toString('utf8');
+    for (const re of banned) assert.ok(!re.test(text), `${rel} matches banned pattern ${re}`);
+  }
+});
+
+exec
+/bin/bash -lc 'node --test tests/asset-factory.test.js' in /home/runner/work/platform25/platform25
+ succeeded in 0ms:
+TAP version 13
+# Subtest: S1: every asset exists and is non-empty
+ok 1 - S1: every asset exists and is non-empty
+  ---
+  duration_ms: 1.181341
+  type: 'test'
+  ...
+# Subtest: S2: player.glb has its six named parts as separate nodes
+ok 2 - S2: player.glb has its six named parts as separate nodes
+  ---
+  duration_ms: 1.179788
+  type: 'test'
+  ...
+# Subtest: S3: each platform set glb has a node with its own name
+ok 3 - S3: each platform set glb has a node with its own name
+  ---
+  duration_ms: 0.580522
+  type: 'test'
+  ...
+# Subtest: S4: every glb is between 800 bytes and 5 MB
+ok 4 - S4: every glb is between 800 bytes and 5 MB
+  ---
+  duration_ms: 0.406705
+  type: 'test'
+  ...
+# Subtest: S5: lineup render is a 960x540 PNG
+ok 5 - S5: lineup render is a 960x540 PNG
+  ---
+  duration_ms: 1.265618
+  type: 'test'
+  ...
+# Subtest: S6: no script imports external assets and no binary files sit under blender/
+ok 6 - S6: no script imports external assets and no binary files sit under blender/
+  ---
+  duration_ms: 1.938965
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 70.353281
+
+exec
+/bin/bash -lc "python -B - <<'PY'
+import json,struct,pathlib
+for p in sorted(pathlib.Path('assets').glob('*.glb')):
+ b=p.read_bytes(); n=struct.unpack_from('<I',b,12)[0]; g=json.loads(b[20:20+n]); print(p.name,json.dumps({'nodes':[x['name'] for x in g['nodes']],'materials':g.get('materials',[]),'images':g.get('images',[])}))
+PY" in /home/runner/work/platform25/platform25
+ succeeded in 0ms:
+coin.glb {"nodes": ["coin"], "materials": [{"doubleSided": true, "emissiveFactor": [0.20000000298023224, 0.11400000026822088, 0.005000000149011613], "name": "Emissive gold", "pbrMetallicRoughness": {"baseColorFactor": [1, 0.5699999928474426, 0.02500000037252903, 1], "metallicFactor": 0.6499999761581421, "roughnessFactor": 0.47999998927116394}}], "images": []}
+goal_flag.glb {"nodes": ["goal_flag"], "materials": [{"doubleSided": true, "name": "White pole", "pbrMetallicRoughness": {"baseColorFactor": [0.8799999952316284, 0.9100000262260437, 0.9300000071525574, 1], "metallicFactor": 0.15000000596046448, "roughnessFactor": 0.47999998927116394}}, {"doubleSided": true, "name": "Coral flag", "pbrMetallicRoughness": {"baseColorFactor": [0.949999988079071, 0.11999999731779099, 0.07500000298023224, 1], "metallicFactor": 0, "roughnessFactor": 0.47999998927116394}}], "images": []}
+ground_block.glb {"nodes": ["ground_block"], "materials": [{"doubleSided": true, "name": "Warm stone", "pbrMetallicRoughness": {"baseColorFactor": [0.36000001430511475, 0.3199999928474426, 0.27000001072883606, 1], "metallicFactor": 0, "roughnessFactor": 0.47999998927116394}}, {"doubleSided": true, "name": "Grass green", "pbrMetallicRoughness": {"baseColorFactor": [0.18000000715255737, 0.550000011920929, 0.06499999761581421, 1], "metallicFactor": 0, "roughnessFactor": 0.47999998927116394}}], "images": []}
+platform_floating.glb {"nodes": ["platform_floating"], "materials": [{"doubleSided": true, "name": "Platform stone", "pbrMetallicRoughness": {"baseColorFactor": [0.36000001430511475, 0.3199999928474426, 0.27000001072883606, 1], "metallicFactor": 0, "roughnessFactor": 0.47999998927116394}}, {"doubleSided": true, "name": "Light stone top", "pbrMetallicRoughness": {"baseColorFactor": [0.6299999952316284, 0.5799999833106995, 0.47999998927116394, 1], "metallicFactor": 0, "roughnessFactor": 0.47999998927116394}}], "images": []}
+player.glb {"nodes": ["torso", "head", "arm_left", "leg_left", "arm_right", "leg_right"], "materials": [{"doubleSided": true, "name": "Warm coral", "pbrMetallicRoughness": {"baseColorFactor": [0.949999988079071, 0.1899999976158142, 0.11999999731779099, 1], "metallicFactor": 0, "roughnessFactor": 0.47999998927116394}}, {"doubleSided": true, "name": "Deep teal", "pbrMetallicRoughness": {"baseColorFactor": [0.014999999664723873, 0.23999999463558197, 0.23000000417232513, 1], "metallicFactor": 0, "roughnessFactor": 0.47999998927116394}}], "images": []}
+spike.glb {"nodes": ["spike"], "materials": [{"doubleSided": true, "name": "Light steel", "pbrMetallicRoughness": {"baseColorFactor": [0.6499999761581421, 0.7200000286102295, 0.7699999809265137, 1], "metallicFactor": 0.550000011920929, "roughnessFactor": 0.47999998927116394}}], "images": []}
+
 codex
-{"station":"reviewer-design","verdict":"changes_requested","findings":["No design system exists for this project: design/DESIGN.md and design/tokens.json are absent. Define these files so the asset output can be reviewed against documented design tokens, component rules, motion rules, and quality bars."]}
+{"station":"reviewer-design","verdict":"pass","findings":[]}
 tokens used
-13,958
-{"station":"reviewer-design","verdict":"changes_requested","findings":["No design system exists for this project: design/DESIGN.md and design/tokens.json are absent. Define these files so the asset output can be reviewed against documented design tokens, component rules, motion rules, and quality bars."]}
+23,293
+{"station":"reviewer-design","verdict":"pass","findings":[]}

@@ -1,4 +1,4 @@
-WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("/tmp/anvil-codex-home-t0eouxtq"))
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("/tmp/anvil-codex-home-wckxz5nj"))
 Reading additional input from stdin...
 OpenAI Codex v0.166.0
 --------
@@ -9,7 +9,7 @@ approval: never
 sandbox: danger-full-access
 reasoning effort: none
 reasoning summaries: none
-session id: 01a18cbb-319b-7e20-bd2b-a4ba5e4f8dc7
+session id: 01a18cc5-91ec-71b2-a088-d1b896e08f21
 --------
 user
 You are executing an ANVIL station packet inside this repository. Follow the packet exactly, edit the files it asks for, and finish with a brief plain text summary of what you changed.
@@ -53,6 +53,11 @@ Done looks like:
 Palette and proportions are stated in the spec. No downloaded models, textures or images. No deployment in this work order; the run stops at the human gate with the lineup render as evidence.
 
 GitHub issue: https://github.com/arananet/platform25/issues/1
+
+Loopback round 2 directives (operator, from the round 1 reviews):
+- The spec revision produced in round 1 is operator approved: .openspec/specs/asset-factory/spec.md as committed for this round is the approved contract. Do not modify anything under .openspec/specs/ in this round.
+- reviewer-design finding: author design/DESIGN.md and design/tokens.json for this project, documenting the palette, the shape language and the quality bars from the spec Look section, so design review has its documented anchor. The tokens must match the colors the Blender scripts actually use.
+- Keep the assets, the scripts and the tests as they are unless a directive above requires a change: scenarios S1 to S6 already pass and must keep passing.
 - risk_hints: 
 - status: new
 
@@ -61,15 +66,142 @@ GitHub issue: https://github.com/arananet/platform25/issues/1
 - intake: completed
 - spec-writer: executed
 - test-writer: executed
+
+## Project design
+
+### Design tokens
+
+```json
+{
+  "$description": "Platform 2.5 asset palette. 'linear' values are the exact Principled BSDF Base Color values used in blender/*.py; 'hex' is the sRGB equivalent.",
+  "color": {
+    "coral": {
+      "linear": [
+        0.95,
+        0.19,
+        0.12
+      ],
+      "hex": "#f97961",
+      "use": "player torso and head (blender/player.py)"
+    },
+    "teal": {
+      "linear": [
+        0.015,
+        0.24,
+        0.23
+      ],
+      "hex": "#218684",
+      "use": "player arms and legs (blender/player.py)"
+    },
+    "stone": {
+      "linear": [
+        0.36,
+        0.32,
+        0.27
+      ],
+      "hex": "#a2998e",
+      "use": "ground block sides, floating platform body"
+    },
+    "grass": {
+      "linear": [
+        0.18,
+        0.55,
+        0.065
+      ],
+      "hex": "#76c448",
+      "use": "ground block top face"
+    },
+    "stoneTop": {
+      "linear": [
+        0.63,
+        0.58,
+        0.48
+      ],
+      "hex": "#d0c8b8",
+      "use": "floating platform top"
+    },
+    "steel": {
+      "linear": [
+        0.65,
+        0.72,
+        0.77
+      ],
+      "hex": "#d3dde3",
+      "use": "spike",
+      "metallic": 0.55
+    },
+    "gold": {
+      "linear": [
+        1.0,
+        0.57,
+        0.025
+      ],
+      "hex": "#ffc72c",
+      "use": "coin",
+      "metallic": 0.65,
+      "emissionStrength": 0.2
+    },
+    "flagPole": {
+      "linear": [
+        0.88,
+        0.91,
+        0.93
+      ],
+      "hex": "#f1f5f7",
+      "use": "goal flag pole",
+      "metallic": 0.15
+    },
+    "flagCoral": {
+      "linear": [
+        0.95,
+        0.12,
+        0.075
+      ],
+      "hex": "#f9614d",
+      "use": "goal flag cloth"
+    },
+    "backdrop": {
+      "linear": [
+        0.055,
+        0.075,
+        0.1
+      ],
+      "hex": "#424d59",
+      "use": "lineup render ground plane (blender/render_lineup.py)"
+    }
+  },
+  "material": {
+    "roughness": 0.48,
+    "textures": false,
+    "shader": "Principled BSDF, flat procedural base color"
+  },
+  "shape": {
+    "language": "primitives and modifiers only; bold boxes and cylinders with small bevels",
+    "bevel": {
+      "torso": 0.045,
+      "head": 0.065
+    }
+  },
+  "render": {
+    "width": 960,
+    "height": 540,
+    "engine": "CYCLES",
+    "device": "CPU",
+    "maxSamples": 64
+  }
+}
+```
 codex
-I’ll read the asset-factory spec first, then inspect the scenario tests and implement the Blender scripts to match them.
+I’ll read the approved spec, check the scripts’ palette, and add the design documentation required by the loopback directives.
 exec
 /bin/bash -lc 'cat .openspec/specs/asset-factory/spec.md' in /home/runner/work/platform25/platform25
  succeeded in 0ms:
 # Asset Factory
 
-Status: revised, awaiting approval
+Status: approved for build
 Slug: asset-factory
+
+Revision note (operator, 2026-10-30): the round 1 revision of this spec is approved as committed. It aligns two clauses with the implementation (the render script builds the lineup from the same per-asset build functions and never calls a glTF importer, and the character look line drops a phrase the model never had). The asset list, the naming contract and scenarios S1 to S6 are unchanged.
 
 ## Roles
 - implementer: builds the change described here
@@ -111,6 +243,7 @@ Materials are created in the scripts with bpy (Principled BSDF base colors are e
 - A second script, `blender/render_lineup.py`, builds all six assets into one scene by calling the same per-asset build functions the asset modules use (it must not call a glTF importer, so S6 holds), arranges them in a row on a ground plane with a camera and light, and renders a still to `evidence/asset-lineup.png` at 960x540 using the Cycles engine on CPU (headless safe), at most 64 samples.
 - The workflow's deterministic step runs `blender --background --python blender/build_all.py` and then `blender/render_lineup.py` after the line, before the suite. The builder may also run them during its station work (Blender 4.5.15 is on PATH in the runner).
 - The scripts must run with `blender --background --python <script>` from the repo root and write paths relative to the repo root, creating `assets/` and `evidence/` when missing.
+- The project test script in `package.json` runs `node --test` over `tests/**/*.test.js` (recorded here per the round 1 architecture review; the glob form is what the suite uses).
 
 ## Requirements
 
@@ -142,487 +275,131 @@ Materials are created in the scripts with bpy (Principled BSDF base colors are e
 - S6: Given the scripts under `blender/`, when the tests scan them, then none of them calls an importer or image loader (no `import_scene`, no `image.load`, no `bpy.data.images.load`), and no file under `blender/` is a binary asset.
 
 exec
-/bin/bash -lc "pwd; rg --files -g 'AGENTS.md' -g 'tests/**' -g 'package.json' -g 'blender/**' -g '.github/workflows/**'" in /home/runner/work/platform25/platform25
+/bin/bash -lc "pwd; rg --files -g 'AGENTS.md' -g 'blender/**' -g 'tests/**' -g 'design/**' -g 'package.json'" in /home/runner/work/platform25/platform25
  succeeded in 0ms:
 /home/runner/work/platform25/platform25
 tests/asset-factory.test.js
+design/DESIGN.md
+design/tokens.json
 package.json
+blender/common.py
+blender/player.py
+blender/ground_block.py
+blender/coin.py
+blender/build_all.py
+blender/goal_flag.py
+blender/platform_floating.py
+blender/render_lineup.py
+blender/spike.py
 
 exec
-/bin/bash -lc 'ls -la; cat tests/asset-factory.test.js; cat package.json; command -v blender; git status --short; rg --files --hidden .github; find .. -name AGENTS.md -print' in /home/runner/work/platform25/platform25
+/bin/bash -lc 'git status --short; cat design/DESIGN.md design/tokens.json; cat blender/*.py; cat package.json' in /home/runner/work/platform25/platform25
  succeeded in 0ms:
-total 88
-drwxr-xr-x 11 runner runner  4096 Oct 30 12:13 .
-drwxr-xr-x  3 runner runner  4096 Oct 30 12:12 ..
-drwxr-xr-x 21 runner runner  4096 Oct 30 12:12 .anvil-factory
-drwxr-xr-x  7 runner runner  4096 Oct 30 12:13 .git
-drwxr-xr-x  3 runner runner  4096 Oct 30 12:12 .github
--rw-r--r--  1 runner runner    37 Oct 30 12:12 .gitignore
-drwxr-xr-x  3 runner runner  4096 Oct 30 12:12 .openspec
--rw-r--r--  1 runner runner   732 Oct 30 12:12 BLUEPRINT.md
--rw-r--r--  1 runner runner 11343 Oct 30 12:12 LICENSE
--rw-r--r--  1 runner runner   158 Oct 30 12:12 PIPELINES.md
--rw-r--r--  1 runner runner  3372 Oct 30 12:12 README.md
--rw-r--r--  1 runner runner    88 Oct 30 12:12 anvil.json
--rw-r--r--  1 runner runner  5500 Oct 30 12:12 anvil.yaml
-drwxr-xr-x  2 runner runner  4096 Oct 30 12:12 brain
--rw-r--r--  1 runner runner   305 Oct 30 12:13 package.json
-drwxr-xr-x  3 runner runner  4096 Oct 30 12:13 runs
-drwxr-xr-x  2 runner runner  4096 Oct 30 12:13 tests
-drwxr-xr-x  2 runner runner  4096 Oct 30 12:12 tools
-drwxr-xr-x  2 runner runner  4096 Oct 30 12:12 work-orders
-// Tests for the asset factory spec (.openspec/specs/asset-factory/spec.md), scenarios S1 to S6.
-// They read the exported files only; no Blender is needed at test time.
-import { test } from 'node:test';
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+ D runs/wo-gh-1/builder.output.md
+ M runs/wo-gh-1/builder.packet.md
+ M runs/wo-gh-1/envelopes/intake.envelope.json
+ M runs/wo-gh-1/envelopes/spec-writer.envelope.json
+ M runs/wo-gh-1/envelopes/test-writer.envelope.json
+ M runs/wo-gh-1/spec-writer.output.md
+ M runs/wo-gh-1/spec-writer.packet.md
+ M runs/wo-gh-1/test-writer.output.md
+ M runs/wo-gh-1/test-writer.packet.md
+?? design/
+# Platform 2.5 design
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const assetsDir = path.join(root, 'assets');
-const blenderDir = path.join(root, 'blender');
-const lineupPath = path.join(root, 'evidence', 'asset-lineup.png');
+Anchor for design review of the asset factory. Source of truth for intent is
+`.openspec/specs/asset-factory/spec.md` (Look section); machine-readable values are in
+`design/tokens.json`, which match the colors used in `blender/*.py`.
 
-const ASSETS = {
-  'player.glb': ['torso', 'head', 'arm_left', 'arm_right', 'leg_left', 'leg_right'],
-  'ground_block.glb': ['ground_block'],
-  'platform_floating.glb': ['platform_floating'],
-  'spike.glb': ['spike'],
-  'coin.glb': ['coin'],
-  'goal_flag.glb': ['goal_flag'],
-};
+## Shape language
+- Clean, bold, readable silhouettes built only from bpy primitives (boxes, cylinders, cones) and modifiers such as bevel.
+- Chunky proportions; small bevels soften edges (torso 0.045, head 0.065) without adding detail.
+- The character is one standing figure of six separate named parts: torso, head, arm_left, arm_right, leg_left, leg_right.
 
-function readGltfJson(file) {
-  const buf = fs.readFileSync(path.join(assetsDir, file));
-  assert.equal(buf.toString('ascii', 0, 4), 'glTF', `${file} is not a binary glTF`);
-  const length = buf.readUInt32LE(8);
-  assert.equal(length, buf.length, `${file} header length mismatch`);
-  const chunkLength = buf.readUInt32LE(12);
-  assert.equal(buf.readUInt32LE(16), 0x4e4f534a, `${file} first chunk is not JSON`);
-  return JSON.parse(buf.toString('utf8', 20, 20 + chunkLength));
+## Palette
+Flat, saturated, procedural colors (Principled BSDF base colors). Values are Blender linear; hex is sRGB.
+
+| Asset | Part | Token | Hex |
+|---|---|---|---|
+| Character | torso, head | coral | #f97961 |
+| Character | arms, legs | teal | #218684 |
+| Ground block | sides | stone | #a2998e |
+| Ground block | top face | grass | #76c448 |
+| Floating platform | body | stone | #a2998e |
+| Floating platform | top | stoneTop (lighter) | #d0c8b8 |
+| Spike | all | steel (light steel gray) | #d3dde3 |
+| Coin | all | gold, metallic 0.65, emission 0.2 | #ffc72c |
+| Goal flag | pole | flagPole (white) | #f1f5f7 |
+| Goal flag | cloth | flagCoral (coral red) | #f9614d |
+| Lineup | ground plane | backdrop | #424d59 |
+
+## Quality bars
+- Readability: the coral/teal figure must stand out clearly against the stone and grass platforms.
+- Coin has a slight emissive feel from material values only; no bloom dependency.
+- No image textures, downloaded models or external files; scripts never import meshes or load images.
+- Every asset exports to `assets/*.glb` with its contracted node names, between 800 bytes and 5 MB.
+- The lineup render shows all six assets in a row: `evidence/asset-lineup.png`, 960x540, Cycles CPU, at most 64 samples.
+{
+  "$description": "Platform 2.5 asset palette. 'linear' values are the exact Principled BSDF Base Color values used in blender/*.py; 'hex' is the sRGB equivalent.",
+  "color": {
+    "coral":      {"linear": [0.95, 0.19, 0.12],   "hex": "#f97961", "use": "player torso and head (blender/player.py)"},
+    "teal":       {"linear": [0.015, 0.24, 0.23],  "hex": "#218684", "use": "player arms and legs (blender/player.py)"},
+    "stone":      {"linear": [0.36, 0.32, 0.27],   "hex": "#a2998e", "use": "ground block sides, floating platform body"},
+    "grass":      {"linear": [0.18, 0.55, 0.065],  "hex": "#76c448", "use": "ground block top face"},
+    "stoneTop":   {"linear": [0.63, 0.58, 0.48],   "hex": "#d0c8b8", "use": "floating platform top"},
+    "steel":      {"linear": [0.65, 0.72, 0.77],   "hex": "#d3dde3", "use": "spike", "metallic": 0.55},
+    "gold":       {"linear": [1.0, 0.57, 0.025],   "hex": "#ffc72c", "use": "coin", "metallic": 0.65, "emissionStrength": 0.2},
+    "flagPole":   {"linear": [0.88, 0.91, 0.93],   "hex": "#f1f5f7", "use": "goal flag pole", "metallic": 0.15},
+    "flagCoral":  {"linear": [0.95, 0.12, 0.075],  "hex": "#f9614d", "use": "goal flag cloth"},
+    "backdrop":   {"linear": [0.055, 0.075, 0.10], "hex": "#424d59", "use": "lineup render ground plane (blender/render_lineup.py)"}
+  },
+  "material": {
+    "roughness": 0.48,
+    "textures": false,
+    "shader": "Principled BSDF, flat procedural base color"
+  },
+  "shape": {
+    "language": "primitives and modifiers only; bold boxes and cylinders with small bevels",
+    "bevel": {"torso": 0.045, "head": 0.065}
+  },
+  "render": {"width": 960, "height": 540, "engine": "CYCLES", "device": "CPU", "maxSamples": 64}
 }
+"""Run with blender --background --python blender/build_all.py."""
+import sys
+from pathlib import Path
 
-function nodeNames(file) {
-  return (readGltfJson(file).nodes ?? []).map((n) => n.name);
-}
+# Keep the script directory text-only, including after module imports.
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-test('S1: every asset exists and is non-empty', () => {
-  for (const file of Object.keys(ASSETS)) {
-    const p = path.join(assetsDir, file);
-    assert.ok(fs.existsSync(p), `${file} is missing`);
-    assert.ok(fs.statSync(p).size > 0, `${file} is empty`);
-  }
-});
+import player
+import ground_block
+import platform_floating
+import spike
+import coin
+import goal_flag
+from common import export, reset
 
-test('S2: player.glb has its six named parts as separate nodes', () => {
-  const names = nodeNames('player.glb');
-  for (const part of ASSETS['player.glb']) {
-    assert.equal(names.filter((n) => n === part).length, 1, `expected exactly one node named ${part}`);
-  }
-});
+ASSETS = (player, ground_block, platform_floating, spike, coin, goal_flag)
 
-test('S3: each platform set glb has a node with its own name', () => {
-  for (const [file, expected] of Object.entries(ASSETS)) {
-    if (file === 'player.glb') continue;
-    assert.ok(nodeNames(file).includes(expected[0]), `${file} has no node named ${expected[0]}`);
-  }
-});
 
-test('S4: every glb is between 800 bytes and 5 MB', () => {
-  for (const file of Object.keys(ASSETS)) {
-    const size = fs.statSync(path.join(assetsDir, file)).size;
-    assert.ok(size >= 800, `${file} is too small (${size} bytes)`);
-    assert.ok(size <= 5 * 1024 * 1024, `${file} is too large (${size} bytes)`);
-  }
-});
+def main():
+    for module in ASSETS:
+        reset()
+        export(module.__name__, module.build())
 
-test('S5: lineup render is a 960x540 PNG', () => {
-  assert.ok(fs.existsSync(lineupPath), 'evidence/asset-lineup.png is missing');
-  const buf = fs.readFileSync(lineupPath);
-  assert.deepEqual([...buf.subarray(0, 8)], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 'not a PNG');
-  assert.equal(buf.toString('ascii', 12, 16), 'IHDR');
-  assert.equal(buf.readUInt32BE(16), 960, 'width');
-  assert.equal(buf.readUInt32BE(20), 540, 'height');
-});
 
-test('S6: no script imports external assets and no binary files sit under blender/', () => {
-  assert.ok(fs.existsSync(blenderDir), 'blender/ is missing');
-  const files = fs.readdirSync(blenderDir, { recursive: true, withFileTypes: true }).filter((e) => e.isFile());
-  assert.ok(files.length > 0, 'blender/ has no files');
-  const banned = [/import_scene/, /image\.load/, /bpy\.data\.images\.load/];
-  for (const entry of files) {
-    const p = path.join(entry.parentPath ?? entry.path, entry.name);
-    const rel = path.relative(root, p);
-    const buf = fs.readFileSync(p);
-    assert.ok(!buf.includes(0), `${rel} looks like a binary file`);
-    assert.ok(/\.(py|md|txt|json)$/.test(entry.name), `${rel} is not a script or text file`);
-    const text = buf.toString('utf8');
-    for (const re of banned) assert.ok(!re.test(text), `${rel} matches banned pattern ${re}`);
-  }
-});
-{"description":"A 2.5D web platformer with 3D assets produced by headless Blender scripts, built end to end with ANVIL.","name":"platform25","private":true,"scripts":{"build":"vite build","dev":"vite","preview":"vite preview","test":"node --test \"tests/**/*.test.js\""},"type":"module","version":"0.1.0"}/home/runner/blender-4.5.15/blender
- M .openspec/specs/asset-factory/spec.md
- M package.json
-?? .anvil-factory/
-?? runs/
-?? tests/
-.github/workflows/anvil-execute.yml
+if __name__ == '__main__':
+    main()
+from math import pi
+from common import cylinder, material
 
-exec
-/bin/bash -lc 'cat .github/workflows/anvil-execute.yml; cat .gitignore' in /home/runner/work/platform25/platform25
- succeeded in 0ms:
-name: anvil-execute
 
-# Execute mode line for platform25 work orders. Separate execute workflow
-# because it needs contents: write (it commits the run evidence and the
-# station made changes back to the trigger branch) and execute mode stays
-# opt in per work order.
-#
-# Model routing (ANVIL policy, recorded in anvil.yaml): the builder
-# station runs GPT-6 Astra through Codex (custom model provider) against
-# the Cloudflare unified AI endpoints on api.cloudflare.com (base
-# /client/v4/accounts/<account>/ai/v1, header cf-aig-gateway-id selecting
-# arananet-ai-gateway), authenticated with the dedicated account API
-# token held in the CF_AI_API_TOKEN secret (minted for this repo,
-# Workers AI Write only). Spec writer, test writer and four of the five
-# reviewers run claude-sonnet-5-5 through Claude Code against the gateway
-# Anthropic route (CF_AIG_TOKEN, a second dedicated token with AI Gateway
-# Run). Reviewer-design runs gpt-6-astra through the same Codex route as
-# the builder, in the Astra wrapper's reviewer mode: Codex runs with full
-# access (its bubblewrap sandbox cannot run on GitHub hosted runners) and
-# read only is enforced by the wrapper's before and after worktree diff.
-# tools/anvil_station.py dispatches per station. There is no fallback
-# from Astra to another model: if a smoke gate fails, the job stops
-# before the line runs.
-#
-# Blender toolchain: this project makes its 3D assets with headless
-# Blender. Blender is pinned to the 4.5 LTS series (4.5.15) and cached
-# between runs. A Blender smoke gate (model a cube, export a glb) must
-# pass before the line runs, alongside the two gateway smokes. After the
-# line, a deterministic step runs blender --background --python
-# blender/build_all.py when that script exists, so the exported assets
-# always come from the committed scripts, never from a station's ad hoc
-# invocation. The project suite then checks the exported assets.
-#
-# Deployment is deliberately NOT part of these runs: anvil.yaml carries
-# no deploy config, so the deployer station stays a packet. Nothing in
-# this program deploys to a public URL.
-#
-# Trigger: the vault PAT cannot dispatch workflows or apply labels, so
-# the trigger is a push to a run branch, plus manual dispatch. Work order
-# selection is by branch: anvil/run-asset-factory runs wo-gh-1
-# (work-orders/issue-1.json, issue 1) and anvil/run-playable-slice runs
-# wo-gh-2 (work-orders/issue-2.json, issue 2). The commit this workflow
-# pushes back uses GITHUB_TOKEN, which does not retrigger workflows.
-on:
-  push:
-    branches: [anvil/run-asset-factory, anvil/run-playable-slice]
-  workflow_dispatch:
-
-permissions:
-  contents: write
-  issues: write
-
-concurrency:
-  group: anvil-execute-${{ github.ref_name }}
-  cancel-in-progress: false
-
-jobs:
-  anvil-execute:
-    name: Run the ANVIL line (Astra builds, Sonnet 5.5 reviews, Blender makes the assets)
-    runs-on: ubuntu-latest
-    timeout-minutes: 150
-    env:
-      ANTHROPIC_BASE_URL: https://gateway.ai.cloudflare.com/v1/693ae9c587f1f2c34328bb47447366b0/arananet-ai-gateway/anthropic
-      ANTHROPIC_API_KEY: ${{ secrets.CF_AIG_TOKEN }}
-      ANTHROPIC_CUSTOM_HEADERS: "cf-aig-authorization: Bearer ${{ secrets.CF_AIG_TOKEN }}"
-      CF_AIG_TOKEN: ${{ secrets.CF_AIG_TOKEN }}
-      CF_AI_API_TOKEN: ${{ secrets.CF_AI_API_TOKEN }}
-      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
-      BLENDER_VERSION: "4.5.15"
-    steps:
-      - name: Check out this repository
-        uses: actions/checkout@v4
-
-      - name: Select work order for this branch
-        id: wo
-        run: |
-          if [ "${GITHUB_REF_NAME}" = "anvil/run-playable-slice" ]; then
-            echo "file=work-orders/issue-2.json" >> "${GITHUB_OUTPUT}"
-            echo "id=wo-gh-2" >> "${GITHUB_OUTPUT}"
-            echo "issue=2" >> "${GITHUB_OUTPUT}"
-          else
-            echo "file=work-orders/issue-1.json" >> "${GITHUB_OUTPUT}"
-            echo "id=wo-gh-1" >> "${GITHUB_OUTPUT}"
-            echo "issue=1" >> "${GITHUB_OUTPUT}"
-          fi
-          echo "Selected: $(tr '\n' ' ' < "${GITHUB_OUTPUT}")"
-
-      - name: Check out the ANVIL factory
-        uses: actions/checkout@v4
-        with:
-          repository: arananet/anvil-factory
-          path: .anvil-factory
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Install Claude Code and Codex
-        run: |
-          npm install -g @anthropic-ai/claude-code
-          npm install -g @openai/codex
-          claude --version
-          codex --version
-
-      - name: Cache the pinned Blender
-        uses: actions/cache@v4
-        with:
-          path: /home/runner/blender-${{ env.BLENDER_VERSION }}
-          key: blender-${{ env.BLENDER_VERSION }}-linux-x64
-
-      - name: Set up Blender (pinned 4.5 LTS)
-        id: blender_setup
-        run: |
-          BLENDER_ROOT="${HOME}/blender-${BLENDER_VERSION}"
-          if [ ! -x "${BLENDER_ROOT}/blender" ]; then
-            echo "Cache miss: downloading Blender ${BLENDER_VERSION}"
-            curl -fsSL "https://download.blender.org/release/Blender4.5/blender-${BLENDER_VERSION}-linux-x64.tar.xz" -o /tmp/blender.tar.xz
-            mkdir -p "${BLENDER_ROOT}"
-            tar -xJf /tmp/blender.tar.xz -C "${BLENDER_ROOT}" --strip-components=1
-            rm -f /tmp/blender.tar.xz
-          else
-            echo "Blender restored from cache"
-          fi
-          echo "${BLENDER_ROOT}" >> "${GITHUB_PATH}"
-          "${BLENDER_ROOT}/blender" --version
-
-      - name: Blender smoke gate (model and export headless)
-        id: smoke_blender
-        run: |
-          SMOKE_DIR="${RUNNER_TEMP}/blender-smoke"
-          mkdir -p "${SMOKE_DIR}"
-          cat > "${SMOKE_DIR}/smoke.py" <<'EOF'
-          import bpy
-          import os
-          import sys
-
-          out = os.path.join(sys.argv[sys.argv.index("--") + 1], "smoke.glb")
-          bpy.ops.wm.read_factory_settings(use_empty=True)
-          bpy.ops.mesh.primitive_cube_add(size=2)
-          cube = bpy.context.active_object
-          cube.name = "smoke_cube"
-          bpy.ops.export_scene.gltf(filepath=out, export_format="GLB")
-          print("BLENDER_SMOKE_EXPORTED", out)
-          EOF
-          blender --background --python "${SMOKE_DIR}/smoke.py" -- "${SMOKE_DIR}" > "${SMOKE_DIR}/smoke.txt" 2>&1 || true
-          cat "${SMOKE_DIR}/smoke.txt"
-          if [ ! -s "${SMOKE_DIR}/smoke.glb" ]; then
-            echo "BLENDER SMOKE FAILED: headless Blender did not export smoke.glb. Stopping before the line runs."
-            exit 1
-          fi
-          echo "Blender smoke passed: blender ${BLENDER_VERSION} modeled and exported a glb headless."
-
-      - name: Anthropic smoke gate (claude-sonnet-5-5 through the gateway)
-        id: smoke_anthropic
-        run: |
-          REPLY=$(claude -p "Reply with exactly: GATEWAY_OK" --model claude-sonnet-5-5 --output-format text)
-          echo "Gateway reply: ${REPLY}"
-          CLEAN=$(printf '%s' "${REPLY}" | tr -d '[:space:]')
-          if [ "${CLEAN}" != "GATEWAY_OK" ]; then
-            echo "Anthropic smoke failed: expected GATEWAY_OK and got the reply above. Stopping before the line runs."
-            exit 1
-          fi
-          echo "Anthropic smoke passed: claude-sonnet-5-5 answered through the gateway Anthropic endpoint."
-
-      - name: Astra smoke gate (gpt-6-astra through the unified /ai endpoints)
-        id: smoke_astra
-        run: |
-          SMOKE_DIR="${RUNNER_TEMP}/astra-smoke"
-          mkdir -p "${SMOKE_DIR}"
-          export CODEX_HOME="${SMOKE_DIR}/codex-home"
-          mkdir -p "${CODEX_HOME}"
-          cat > "${CODEX_HOME}/config.toml" <<'EOF'
-          model = "openai/gpt-6-astra"
-          model_provider = "cloudflare"
-          [model_providers.cloudflare]
-          name = "Cloudflare Unified AI (AI Gateway: arananet-ai-gateway)"
-          base_url = "https://api.cloudflare.com/client/v4/accounts/693ae9c587f1f2c34328bb47447366b0/ai/v1"
-          env_key = "CF_AI_API_TOKEN"
-          wire_api = "responses"
-          http_headers = { "cf-aig-gateway-id" = "arananet-ai-gateway" }
-          EOF
-          timeout 420 codex exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox --output-last-message "${SMOKE_DIR}/astra-last.txt" "Reply with exactly: ASTRA_OK" < /dev/null > "${SMOKE_DIR}/astra-smoke.txt" 2>&1 || true
-          tail -c 3000 "${SMOKE_DIR}/astra-smoke.txt" || true
-          if ! grep -q "ASTRA_OK" "${SMOKE_DIR}/astra-last.txt" 2>/dev/null; then
-            echo "ASTRA SMOKE FAILED: codex did not return ASTRA_OK from gpt-6-astra through the unified /ai endpoints on api.cloudflare.com. The raw output above is the exact error. Stopping here: no fallback to another model."
-            exit 1
-          fi
-          echo "Astra smoke passed: gpt-6-astra answered through the unified /ai endpoint (Codex, Responses API, AI Gateway header)."
-
-      - name: Run the ANVIL sdlc-default line in execute mode
-        id: line
-        if: steps.smoke_blender.outcome == 'success' && steps.smoke_anthropic.outcome == 'success' && steps.smoke_astra.outcome == 'success'
-        run: |
-          PYTHONPATH=.anvil-factory python3 -m anvil.cli run . \
-            --pipeline .anvil-factory/pipelines/sdlc-default.json \
-            --work-order ${{ steps.wo.outputs.file }} \
-            --execute
-
-      - name: Build the 3D assets with headless Blender (deterministic)
-        id: assets
-        if: steps.line.outcome == 'success'
-        run: |
-          if [ -f blender/build_all.py ]; then
-            blender --background --python blender/build_all.py
-            ls -la assets/
-          else
-            echo "No blender/build_all.py in this tree yet, nothing to build."
-          fi
-          if [ -f blender/render_lineup.py ]; then
-            blender --background --python blender/render_lineup.py
-            ls -la evidence/
-          else
-            echo "No blender/render_lineup.py in this tree yet, no lineup render."
-          fi
-
-      - name: Install project dependencies
-        id: deps
-        if: always() && steps.smoke_anthropic.outcome == 'success' && steps.smoke_astra.outcome == 'success'
-        run: |
-          if [ -f package.json ]; then
-            npm install --no-audit --no-fund
-          fi
-          if [ -d node_modules/playwright ]; then
-            npx playwright install --with-deps chromium
-          fi
-
-      - name: Run the project test suite after the line
-        id: suite
-        if: always() && steps.smoke_anthropic.outcome == 'success' && steps.smoke_astra.outcome == 'success'
-        run: |
-          npm test > suite-output.txt 2>&1
-          echo "SUITE_EXIT=$?" >> suite-result.txt
-          cat suite-output.txt
-
-      - name: Commit the run evidence and the station changes back to the branch
-        if: always() && steps.smoke_anthropic.outcome == 'success' && steps.smoke_astra.outcome == 'success'
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --stat > run-diff.txt || true
-          if git diff --cached --quiet; then
-            echo "The run produced no file changes to commit."
-            exit 0
-          fi
-          VERDICT=$(python3 -c "import json; print(json.load(open('runs/${{ steps.wo.outputs.id }}/report.json'))['verdict'])" 2>/dev/null || echo "no-report")
-          git commit -m "ANVIL execute run ${{ steps.wo.outputs.id }} (issue ${{ steps.wo.outputs.issue }}): verdict ${VERDICT}" -m "Builder station executed by GPT-6 Astra (Codex) through the Cloudflare AI Gateway; spec, test and reviewer stations executed by Claude Code (claude-sonnet-5-5); 3D assets built by the pinned headless Blender step. Run evidence in runs/${{ steps.wo.outputs.id }}/."
-          git push origin "HEAD:${GITHUB_REF_NAME}"
-
-      - name: Comment the run report on the issue
-        if: always() && steps.smoke_anthropic.outcome == 'success' && steps.smoke_astra.outcome == 'success'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          BRANCH: ${{ github.ref_name }}
-          WO_ID: ${{ steps.wo.outputs.id }}
-        run: |
-          python3 - <<'PYEOF'
-          import json, os
-          from pathlib import Path
-          run_url = os.environ["RUN_URL"]
-          branch = os.environ["BRANCH"]
-          report_path = Path("runs") / os.environ["WO_ID"] / "report.json"
-          if not report_path.exists():
-              lines = [
-                  "## ANVIL execute run report",
-                  "",
-                  "The executed run did not produce a report.json, so there is no verdict to report. "
-                  f"See the workflow run for the failure: {run_url}",
-              ]
-              Path("comment.md").write_text("\n".join(lines) + "\n")
-              raise SystemExit(0)
-          report = json.loads(report_path.read_text())
-          decision = report.get("decision", {})
-          suite = ""
-          sr = Path("suite-result.txt")
-          if sr.exists():
-              suite = "pass" if "SUITE_EXIT=0" in sr.read_text() else "FAIL (see suite-output.txt in the run commit)"
-          lines = [
-              "## ANVIL execute run report",
-              "",
-              f"Work order: {report['work_order_id']}",
-              f"Pipeline: {report['pipeline']}",
-              f"Approver verdict: {report['verdict']}",
-              f"Human review required: {report['human_required']}",
-              f"Deployment status: {report.get('deployment_status')}",
-              f"Project test suite after the run: {suite or 'not recorded'}",
-              "",
-              "Decision record:",
-              f"- Approver: {decision.get('approver', {}).get('rule', '')}",
-              f"- Human gate: {decision.get('human_gate', {}).get('rule', '')}",
-              "",
-              "| Station | Status | Configured model | Executed model |",
-              "|---|---|---|---|",
-          ]
-          for step in report.get("steps", []):
-              lines.append(
-                  f"| {step['station']} | {step['status']} | "
-                  f"{step.get('configured_model')} | {step.get('executed_model')} |"
-              )
-          diff_path = Path("run-diff.txt")
-          if diff_path.exists() and diff_path.read_text().strip():
-              lines += ["", f"Files changed by the run (committed to `{branch}`):", "", "```", diff_path.read_text().strip(), "```"]
-          lines += [
-              "",
-              "Honest note: this run EXECUTED its agent stations with per station model routing. "
-              "The builder ran GPT-6 Astra through Codex (custom model provider, Responses API) "
-              "against the Cloudflare unified AI endpoints on api.cloudflare.com with the "
-              "cf-aig-gateway-id header selecting the AI Gateway (Unified Billing covers the "
-              "OpenAI provider there); spec writer, test writer and four reviewers ran "
-              "claude-sonnet-5-5 through Claude Code against the gateway Anthropic route, and "
-              "reviewer-design ran gpt-6-astra through Codex in reviewer mode, with read only "
-              "enforced by the Astra wrapper's before and after worktree diff (the Codex "
-              "bubblewrap sandbox cannot run on GitHub hosted runners, so Codex itself runs "
-              "with full access). The 3D assets were built by the pinned headless Blender step "
-              "from the committed scripts. All three smoke gates (Blender, Anthropic, Astra) "
-              "passed before the line ran. The deployer station stayed a packet on purpose: "
-              "nothing in this program deploys to a public URL.",
-              f"Workflow run: {run_url}",
-          ]
-          Path("comment.md").write_text("\n".join(lines) + "\n")
-          print(f"Verdict: {report['verdict']}")
-          PYEOF
-          gh issue comment ${{ steps.wo.outputs.issue }} --body-file comment.md
-
-      - name: Upload the run directory
-        if: always() && steps.smoke_anthropic.outcome == 'success' && steps.smoke_astra.outcome == 'success'
-        uses: actions/upload-artifact@v4
-        with:
-          name: anvil-execute-run-${{ steps.wo.outputs.id }}
-          path: |
-            runs/
-            suite-output.txt
-          if-no-files-found: ignore
-node_modules/
-dist/
-.wrangler/
-*.log
-
-codex
-The workflow already pins Blender 4.5.15 and runs both scripts before the tests. I’ll add shared primitive and material helpers, six asset modules, and the build and render entry points. Limb origins will sit at their top ends, and the coin will export with its faces along ±Z.
-exec
-/bin/bash -lc "mkdir -p blender
-cat > blender/common.py <<'EOF'
-\"\"\"Primitive-only modeling helpers. Blender Z-up becomes glTF Y-up.\"\"\"
+def build():
+    gold = material('Emissive gold', (1.0, 0.57, 0.025), metallic=0.65, emission=0.2)
+    return [cylinder('coin', 0.3, 0.085, (0, 0, 0.3), gold,
+                     rotation=(pi / 2, 0, 0))]
+"""Primitive-only modeling helpers. Blender Z-up becomes glTF Y-up."""
 from pathlib import Path
 import bpy
 
@@ -705,9 +482,37 @@ def export(name, objects):
                               export_apply=True, export_yup=True,
                               export_animations=False, export_cameras=False,
                               export_lights=False)
-EOF
-cat > blender/player.py <<'EOF'
-\"\"\"Six articulated pieces, standing 1.8 units tall.\"\"\"
+from math import pi
+from common import cylinder, join, material
+import bpy
+
+
+def build():
+    white = material('White pole', (0.88, 0.91, 0.93), metallic=0.15)
+    coral = material('Coral flag', (0.95, 0.12, 0.075))
+    pole = cylinder('goal_flag', 0.035, 2.2, (0, 0, 1.1), white)
+    # A three-sided cylinder makes a solid triangular flag from a primitive.
+    flag = cylinder('Flag triangle', 1, 0.035, (0.25, 0, 1.89), coral,
+                    vertices=3, rotation=(pi / 2, 0, 0))
+    flag.dimensions = (0.75, 0.035, 0.52)
+    bpy.context.view_layer.objects.active = flag
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    return join('goal_flag', [pole, flag])
+from common import box, material
+
+
+def build():
+    stone = material('Warm stone', (0.36, 0.32, 0.27))
+    grass = material('Grass green', (0.18, 0.55, 0.065))
+    return [box('ground_block', (2, 2, 1), (0, 0, 0.5), stone, top=grass)]
+from common import box, material
+
+
+def build():
+    stone = material('Platform stone', (0.36, 0.32, 0.27))
+    top = material('Light stone top', (0.63, 0.58, 0.48))
+    return [box('platform_floating', (2, 1.2, 0.4), (0, 0, 0.2), stone, top=top)]
+"""Six articulated pieces, standing 1.8 units tall."""
 from common import box, material, pivot
 
 
@@ -725,97 +530,7 @@ def build():
         pivot(leg, (x * 0.155, 0, 0.74))
         parts.extend([arm, leg])
     return parts
-EOF
-cat > blender/ground_block.py <<'EOF'
-from common import box, material
-
-
-def build():
-    stone = material('Warm stone', (0.36, 0.32, 0.27))
-    grass = material('Grass green', (0.18, 0.55, 0.065))
-    return [box('ground_block', (2, 2, 1), (0, 0, 0.5), stone, top=grass)]
-EOF
-cat > blender/platform_floating.py <<'EOF'
-from common import box, material
-
-
-def build():
-    stone = material('Platform stone', (0.36, 0.32, 0.27))
-    top = material('Light stone top', (0.63, 0.58, 0.48))
-    return [box('platform_floating', (2, 1.2, 0.4), (0, 0, 0.2), stone, top=top)]
-EOF
-cat > blender/spike.py <<'EOF'
-import bpy
-from common import box, finish, join, material
-
-
-def build():
-    steel = material('Light steel', (0.65, 0.72, 0.77), metallic=0.55)
-    base = box('spike', (0.64, 0.64, 0.1), (0, 0, 0.05), steel)
-    bpy.ops.mesh.primitive_cone_add(vertices=4, radius1=0.4, radius2=0,
-                                    depth=0.7, location=(0, 0, 0.45))
-    tip = finish(bpy.context.object, 'Spike tip', steel)
-    return join('spike', [base, tip])
-EOF
-cat > blender/coin.py <<'EOF'
-from math import pi
-from common import cylinder, material
-
-
-def build():
-    gold = material('Emissive gold', (1.0, 0.57, 0.025), metallic=0.65, emission=0.2)
-    return [cylinder('coin', 0.3, 0.085, (0, 0, 0.3), gold,
-                     rotation=(pi / 2, 0, 0))]
-EOF
-cat > blender/goal_flag.py <<'EOF'
-from math import pi
-from common import cylinder, join, material
-import bpy
-
-
-def build():
-    white = material('White pole', (0.88, 0.91, 0.93), metallic=0.15)
-    coral = material('Coral flag', (0.95, 0.12, 0.075))
-    pole = cylinder('goal_flag', 0.035, 2.2, (0, 0, 1.1), white)
-    # A three-sided cylinder makes a solid triangular flag from a primitive.
-    flag = cylinder('Flag triangle', 1, 0.035, (0.25, 0, 1.89), coral,
-                    vertices=3, rotation=(pi / 2, 0, 0))
-    flag.dimensions = (0.75, 0.035, 0.52)
-    bpy.context.view_layer.objects.active = flag
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    return join('goal_flag', [pole, flag])
-EOF
-cat > blender/build_all.py <<'EOF'
-\"\"\"Run with blender --background --python blender/build_all.py.\"\"\"
-import sys
-from pathlib import Path
-
-# Keep the script directory text-only, including after module imports.
-sys.dont_write_bytecode = True
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-import player
-import ground_block
-import platform_floating
-import spike
-import coin
-import goal_flag
-from common import export, reset
-
-ASSETS = (player, ground_block, platform_floating, spike, coin, goal_flag)
-
-
-def main():
-    for module in ASSETS:
-        reset()
-        export(module.__name__, module.build())
-
-
-if __name__ == '__main__':
-    main()
-EOF
-cat > blender/render_lineup.py <<'EOF'
-\"\"\"Rebuild the six assets with their shared builders and render review evidence.\"\"\"
+"""Rebuild the six assets with their shared builders and render review evidence."""
 import sys
 from pathlib import Path
 
@@ -878,226 +593,63 @@ def main():
 
 if __name__ == '__main__':
     main()
-EOF
-blender --background --python blender/build_all.py" in /home/runner/work/platform25/platform25
- succeeded in 642ms:
-INFO Draco mesh compression is available, use library at /home/runner/blender-4.5.15/4.5/scripts/addons_core/io_scene_gltf2/libextern_draco.so
-12:14:49 | INFO: Starting glTF 2.0 export
-12:14:49 | INFO: Extracting primitive: Cube
-12:14:49 | INFO: Primitives created: 1
-12:14:49 | INFO: Extracting primitive: Cube.001
-12:14:49 | INFO: Primitives created: 1
-12:14:49 | INFO: Extracting primitive: Cube.002
-12:14:49 | INFO: Primitives created: 1
-12:14:49 | INFO: Extracting primitive: Cube.003
-12:14:49 | INFO: Primitives created: 1
-12:14:49 | INFO: Extracting primitive: Cube.004
-12:14:49 | INFO: Primitives created: 1
-12:14:49 | INFO: Extracting primitive: Cube.005
-12:14:49 | INFO: Primitives created: 1
-12:14:49 | INFO: Finished glTF 2.0 export in 0.015144109725952148 s
+import bpy
+from common import box, finish, join, material
 
-12:14:49 | INFO: Starting glTF 2.0 export
-12:14:49 | INFO: Extracting primitive: Cube
-12:14:49 | INFO: Primitives created: 2
-12:14:49 | INFO: Finished glTF 2.0 export in 0.005314350128173828 s
 
-12:14:49 | INFO: Starting glTF 2.0 export
-12:14:49 | INFO: Extracting primitive: Cube
-12:14:49 | INFO: Primitives created: 2
-12:14:49 | INFO: Finished glTF 2.0 export in 0.004922628402709961 s
-
-12:14:49 | INFO: Starting glTF 2.0 export
-12:14:49 | INFO: Extracting primitive: Cube
-12:14:49 | INFO: Primitives created: 1
-12:14:49 | INFO: Finished glTF 2.0 export in 0.003227710723876953 s
-
-12:14:49 | INFO: Starting glTF 2.0 export
-12:14:49 | INFO: Extracting primitive: Cylinder
-12:14:49 | INFO: Primitives created: 1
-12:14:49 | INFO: Finished glTF 2.0 export in 0.0033502578735351562 s
-
-12:14:49 | INFO: Starting glTF 2.0 export
-12:14:49 | INFO: Extracting primitive: Cylinder
-12:14:49 | INFO: Primitives created: 2
-12:14:49 | INFO: Finished glTF 2.0 export in 0.005439043045043945 s
-
-Blender 4.5.15 LTS (hash 5afeabba6097 built 2026-10-22 01:33:47)
-
-Blender quit
-
+def build():
+    steel = material('Light steel', (0.65, 0.72, 0.77), metallic=0.55)
+    base = box('spike', (0.64, 0.64, 0.1), (0, 0, 0.05), steel)
+    bpy.ops.mesh.primitive_cone_add(vertices=4, radius1=0.4, radius2=0,
+                                    depth=0.7, location=(0, 0, 0.45))
+    tip = finish(bpy.context.object, 'Spike tip', steel)
+    return join('spike', [base, tip])
+{"description":"A 2.5D web platformer with 3D assets produced by headless Blender scripts, built end to end with ANVIL.","name":"platform25","private":true,"scripts":{"build":"vite build","dev":"vite","preview":"vite preview","test":"node --test \"tests/**/*.test.js\""},"type":"module","version":"0.1.0"}
 exec
-/bin/bash -lc 'blender --background --python blender/render_lineup.py' in /home/runner/work/platform25/platform25
-exec
-/bin/bash -lc "python3 - <<'PY'
-import json, pathlib, struct, subprocess
-
-def structures():
-    result = {}
-    for file in pathlib.Path('assets').glob('*.glb'):
-        data = file.read_bytes()
-        length = struct.unpack_from('<I', data, 12)[0]
-        doc = json.loads(data[20:20+length])
-        result[file.name] = (doc['nodes'], doc['scenes'])
-    return result
-before = structures()
-subprocess.run(['blender', '--background', '--python', 'blender/build_all.py'], check=True, stdout=subprocess.DEVNULL)
-assert before == structures()
-print('Repeated build: identical node and scene structures for all six assets.')
-PY" in /home/runner/work/platform25/platform25
- succeeded in 1904ms:
-Repeated build: identical node and scene structures for all six assets.
-
-exec
-/bin/bash -lc 'npm test; git diff --check' in /home/runner/work/platform25/platform25
- succeeded in 542ms:
-
-> platform25@0.1.0 test
-> node --test "tests/**/*.test.js"
-
-TAP version 13
-# Subtest: S1: every asset exists and is non-empty
-ok 1 - S1: every asset exists and is non-empty
-  ---
-  duration_ms: 4.707222
-  type: 'test'
-  ...
-# Subtest: S2: player.glb has its six named parts as separate nodes
-ok 2 - S2: player.glb has its six named parts as separate nodes
-  ---
-  duration_ms: 4.914461
-  type: 'test'
-  ...
-# Subtest: S3: each platform set glb has a node with its own name
-ok 3 - S3: each platform set glb has a node with its own name
-  ---
-  duration_ms: 0.87265
-  type: 'test'
-  ...
-# Subtest: S4: every glb is between 800 bytes and 5 MB
-ok 4 - S4: every glb is between 800 bytes and 5 MB
-  ---
-  duration_ms: 0.523033
-  type: 'test'
-  ...
-# Subtest: S5: lineup render is a 960x540 PNG
-not ok 5 - S5: lineup render is a 960x540 PNG
-  ---
-  duration_ms: 0.903517
-  type: 'test'
-  location: '/home/runner/work/platform25/platform25/tests/asset-factory.test.js:67:1'
-  failureType: 'testCodeFailure'
-  error: 'evidence/asset-lineup.png is missing'
-  code: 'ERR_ASSERTION'
-  name: 'AssertionError'
-  expected: true
-  actual: false
-  operator: '=='
-  stack: |-
-    TestContext.<anonymous> (file:///home/runner/work/platform25/platform25/tests/asset-factory.test.js:68:10)
-    Test.runInAsyncScope (node:async_hooks:214:14)
-    Test.run (node:internal/test_runner/test:1047:25)
-    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
-    Test.postRun (node:internal/test_runner/test:1173:19)
-    Test.run (node:internal/test_runner/test:1101:12)
-    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
-  ...
-# Subtest: S6: no script imports external assets and no binary files sit under blender/
-ok 6 - S6: no script imports external assets and no binary files sit under blender/
-  ---
-  duration_ms: 2.309057
-  type: 'test'
-  ...
-1..6
-# tests 6
-# suites 0
-# pass 5
-# fail 1
-# cancelled 0
-# skipped 0
-# todo 0
-# duration_ms 197.532558
-
-exec
-/bin/bash -lc 'ls -lh assets; git status --short' in /home/runner/work/platform25/platform25
+/bin/bash -lc 'find .. -name AGENTS.md -print' in /home/runner/work/platform25/platform25
  succeeded in 0ms:
-total 84K
--rw-r--r-- 1 runner runner 8.1K Oct 30 12:14 coin.glb
--rw-r--r-- 1 runner runner 9.5K Oct 30 12:14 goal_flag.glb
--rw-r--r-- 1 runner runner 2.8K Oct 30 12:14 ground_block.glb
--rw-r--r-- 1 runner runner 3.0K Oct 30 12:14 platform_floating.glb
--rw-r--r-- 1 runner runner  47K Oct 30 12:14 player.glb
--rw-r--r-- 1 runner runner 2.6K Oct 30 12:14 spike.glb
- M .openspec/specs/asset-factory/spec.md
- M package.json
-?? .anvil-factory/
-?? assets/
-?? blender/
-?? runs/
-?? tests/
-
- succeeded in 21909ms:
-Blender 4.5.15 LTS (hash 5afeabba6097 built 2026-10-22 01:33:47)
-Fra:1 Mem:10.55M (Peak 10.55M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | torso
-Fra:1 Mem:10.55M (Peak 10.55M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | head
-Fra:1 Mem:10.57M (Peak 10.57M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | leg_left
-Fra:1 Mem:10.57M (Peak 10.57M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Area.001
-Fra:1 Mem:10.58M (Peak 10.58M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | leg_right
-Fra:1 Mem:10.59M (Peak 10.59M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Area
-Fra:1 Mem:10.59M (Peak 10.59M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | Studio floor
-Fra:1 Mem:10.59M (Peak 10.59M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | ground_block
-Fra:1 Mem:10.59M (Peak 10.59M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | platform_floating
-Fra:1 Mem:10.60M (Peak 10.60M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | spike
-Fra:1 Mem:10.61M (Peak 10.61M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Synchronizing object | coin
-Fra:1 Mem:10.62M (Peak 10.62M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Initializing
-Fra:1 Mem:9.60M (Peak 10.62M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Waiting for render to start
-Fra:1 Mem:9.60M (Peak 10.62M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Scene
-Fra:1 Mem:9.60M (Peak 10.62M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Updating Shaders
-Fra:1 Mem:9.60M (Peak 10.62M) | Time:00:00.00 | Mem:0.00M, Peak:0.00M | Scene, ViewLayer | Loading render kernels (may take a few minutes the first time)
-Fra:1 Mem:9.69M (Peak 10.62M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Procedurals
-Fra:1 Mem:9.69M (Peak 10.62M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Background
-Fra:1 Mem:9.69M (Peak 10.62M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Camera
-Fra:1 Mem:9.69M (Peak 10.62M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes Flags
-Fra:1 Mem:9.69M (Peak 10.62M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects
-Fra:1 Mem:9.69M (Peak 10.62M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Copying Transformations to device
-Fra:1 Mem:9.69M (Peak 10.62M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems
-Fra:1 Mem:9.69M (Peak 10.62M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Particle Systems | Copying Particles to device
-Fra:1 Mem:9.69M (Peak 10.62M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Meshes
-Fra:1 Mem:9.69M (Peak 10.62M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Objects | Applying Static Transformations
-Fra:1 Mem:9.69M (Peak 10.62M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Computing attributes
-Fra:1 Mem:9.70M (Peak 10.62M) | Time:00:00.00 | Mem:0.01M, Peak:0.01M | Scene, ViewLayer | Updating Mesh | Copying Attributes to device
-Fra:1 Mem:9.70M (Peak 10.62M) | Time:00:00.00 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Scene BVH | Building
-Fra:1 Mem:9.70M (Peak 10.62M) | Time:00:00.00 | Mem:0.02M, Peak:0.02M | Scene, ViewLayer | Updating Scene BVH | Building BVH
-Fra:1 Mem:9.70M (Peak 10.62M) | Time:00:00.00 | Mem:0.05M, Peak:0.05M | Scene, ViewLayer | Updating Scene BVH | Building BVH 0%
-Fra:1 Mem:9.70M (Peak 10.62M) | Time:00:00.00 | Mem:0.08M, Peak:0.11M | Scene, ViewLayer | Updating Scene BVH | Copying BVH to device
-Fra:1 Mem:9.70M (Peak 10.62M) | Time:00:00.00 | Mem:0.08M, Peak:0.11M | Scene, ViewLayer | Updating Mesh | Computing normals
-Fra:1 Mem:9.72M (Peak 10.62M) | Time:00:00.00 | Mem:0.08M, Peak:0.11M | Scene, ViewLayer | Updating Mesh | Copying Mesh to device
-Fra:1 Mem:9.72M (Peak 10.62M) | Time:00:00.00 | Mem:0.11M, Peak:0.11M | Scene, ViewLayer | Updating Objects Flags
-Fra:1 Mem:9.72M (Peak 10.62M) | Time:00:00.00 | Mem:0.11M, Peak:0.11M | Scene, ViewLayer | Updating Primitive Offsets
-Fra:1 Mem:9.72M (Peak 10.62M) | Time:00:00.00 | Mem:0.11M, Peak:0.11M | Scene, ViewLayer | Updating Images
-Fra:1 Mem:9.72M (Peak 10.62M) | Time:00:00.00 | Mem:0.11M, Peak:0.11M | Scene, ViewLayer | Updating Camera Volume
-Fra:1 Mem:9.72M (Peak 10.62M) | Time:00:00.00 | Mem:0.11M, Peak:0.11M | Scene, ViewLayer | Updating Lookup Tables
-Fra:1 Mem:9.72M (Peak 10.62M) | Time:00:00.00 | Mem:0.19M, Peak:0.19M | Scene, ViewLayer | Updating Lights
-Fra:1 Mem:9.73M (Peak 10.62M) | Time:00:00.00 | Mem:0.19M, Peak:0.19M | Scene, ViewLayer | Updating Lights | Computing tree
-Fra:1 Mem:9.73M (Peak 10.62M) | Time:00:00.00 | Mem:0.19M, Peak:0.19M | Scene, ViewLayer | Updating Integrator
-Fra:1 Mem:9.73M (Peak 10.62M) | Time:00:00.00 | Mem:0.19M, Peak:0.19M | Scene, ViewLayer | Updating Film
-Fra:1 Mem:9.73M (Peak 10.62M) | Time:00:00.00 | Mem:0.11M, Peak:0.19M | Scene, ViewLayer | Updating Lookup Tables
-Fra:1 Mem:9.73M (Peak 10.62M) | Time:00:00.00 | Mem:0.20M, Peak:0.20M | Scene, ViewLayer | Updating Baking
-Fra:1 Mem:9.73M (Peak 10.62M) | Time:00:00.00 | Mem:0.20M, Peak:0.20M | Scene, ViewLayer | Updating Device | Writing constant memory
-Fra:1 Mem:9.73M (Peak 10.62M) | Time:00:00.00 | Mem:0.20M, Peak:0.20M | Scene, ViewLayer | Loading denoising kernels (may take a few minutes the first time)
-Fra:1 Mem:9.73M (Peak 10.62M) | Time:00:00.00 | Mem:0.20M, Peak:0.20M | Scene, ViewLayer | Sample 0/32
-Fra:1 Mem:47.35M (Peak 47.35M) | Time:00:00.47 | Remaining:00:14.67 | Mem:37.77M, Peak:37.77M | Scene, ViewLayer | Sample 1/32
-Fra:1 Mem:63.17M (Peak 86.90M) | Time:00:21.44 | Mem:37.77M, Peak:37.77M | Scene, ViewLayer | Sample 32/32
-Fra:1 Mem:63.17M (Peak 86.90M) | Time:00:21.44 | Mem:37.77M, Peak:37.77M | Scene, ViewLayer | Finished
-Saved: '/home/runner/work/platform25/platform25/evidence/asset-lineup.png'
-Time: 00:21.57 (Saving: 00:00.12)
-
-
-Blender quit
+codex
+The design files already exist as untracked drafts, and their palette values match the Blender scripts. I’ll complete the shape and proportion guidance, then run the existing scenario tests.
+apply patch
+patch: completed
+/home/runner/work/platform25/platform25/design/DESIGN.md
+diff --git a/design/DESIGN.md b/design/DESIGN.md
+index 9ac351aefff21cbcab882cb67861d916530dee38..204c708c4244f52d7e9f7721aeac399d95d5dec9
+--- a/design/DESIGN.md
++++ b/design/DESIGN.md
+@@ -8,9 +8,17 @@
+ - Clean, bold, readable silhouettes built only from bpy primitives (boxes, cylinders, cones) and modifiers such as bevel.
+ - Chunky proportions; small bevels soften edges (torso 0.045, head 0.065) without adding detail.
+ - The character is one standing figure of six separate named parts: torso, head, arm_left, arm_right, leg_left, leg_right.
++- Keep the head above the torso, arms beside it and legs below it; limb pivots sit at their top ends for animation. The standing figure is roughly 1.8 units tall.
++- Ground is a solid 2 wide × 1 tall × 2 deep block; the floating platform is a 2 wide × 0.4 tall × 1.2 deep slab.
++- The spike is a sharp cone or pyramid on a small base, about 0.8 tall, with an unmistakable hazard silhouette.
++- The coin is an upright disc about 0.6 across, with flat faces along exported ±Z. The goal is a pole about 2.2 tall with a triangular flag at the top.
+ 
+ ## Palette
+ Flat, saturated, procedural colors (Principled BSDF base colors). Values are Blender linear; hex is sRGB.
++Use the linear RGB triples in `tokens.json` for shader inputs, with alpha 1.
++The hex swatches describe the same base colors in sRGB; lighting and the lineup's
++AgX view transform affect their rendered appearance. All materials use roughness
++0.48; metallic and emission strength default to zero unless specified in the tokens.
+ 
+ | Asset | Part | Token | Hex |
+ |---|---|---|---|
+@@ -32,3 +40,4 @@
+ - No image textures, downloaded models or external files; scripts never import meshes or load images.
+ - Every asset exports to `assets/*.glb` with its contracted node names, between 800 bytes and 5 MB.
+ - The lineup render shows all six assets in a row: `evidence/asset-lineup.png`, 960x540, Cycles CPU, at most 64 samples.
++- Review the lineup for distinct silhouettes, visible contrasting top faces and a clearly readable hazard, pickup and goal. Scenario tests S1–S6 check the export and evidence contracts; visual acceptance belongs to the separate reviewer and human gate.
 
 exec
-/bin/bash -lc 'npm test' in /home/runner/work/platform25/platform25
- succeeded in 72ms:
+/bin/bash -lc "python - <<'PY'
+import json
+from pathlib import Path
+p = Path('design/tokens.json')
+p.write_text(json.dumps(json.loads(p.read_text()), indent=2) + '\\n')
+PY
+npm test" in /home/runner/work/platform25/platform25
+ succeeded in 105ms:
 
 > platform25@0.1.0 test
 > node --test "tests/**/*.test.js"
@@ -1106,37 +658,37 @@ TAP version 13
 # Subtest: S1: every asset exists and is non-empty
 ok 1 - S1: every asset exists and is non-empty
   ---
-  duration_ms: 1.199022
+  duration_ms: 1.180957
   type: 'test'
   ...
 # Subtest: S2: player.glb has its six named parts as separate nodes
 ok 2 - S2: player.glb has its six named parts as separate nodes
   ---
-  duration_ms: 1.27813
+  duration_ms: 1.128349
   type: 'test'
   ...
 # Subtest: S3: each platform set glb has a node with its own name
 ok 3 - S3: each platform set glb has a node with its own name
   ---
-  duration_ms: 0.572024
+  duration_ms: 0.617159
   type: 'test'
   ...
 # Subtest: S4: every glb is between 800 bytes and 5 MB
 ok 4 - S4: every glb is between 800 bytes and 5 MB
   ---
-  duration_ms: 0.358804
+  duration_ms: 0.396414
   type: 'test'
   ...
 # Subtest: S5: lineup render is a 960x540 PNG
 ok 5 - S5: lineup render is a 960x540 PNG
   ---
-  duration_ms: 1.334006
+  duration_ms: 1.238115
   type: 'test'
   ...
 # Subtest: S6: no script imports external assets and no binary files sit under blender/
 ok 6 - S6: no script imports external assets and no binary files sit under blender/
   ---
-  duration_ms: 1.805411
+  duration_ms: 1.860032
   type: 'test'
   ...
 1..6
@@ -1147,14 +699,14 @@ ok 6 - S6: no script imports external assets and no binary files sit under blend
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 67.990988
+# duration_ms 70.288611
 
 codex
-Added primitive-only Blender modules, build_all.py, and render_lineup.py. Generated all six GLB assets and the 960×540 lineup PNG using Cycles CPU at 32 samples.
+Completed design/DESIGN.md and formatted design/tokens.json, documenting palette, proportions, shape language and review quality bars. Tokens match the Blender materials.
 
-All six scenario tests pass. Repeated builds preserve identical node structures. Approval remains with the review station.
+All six scenario tests pass with npm test. Spec, assets, scripts and tests remain unchanged.
 tokens used
-32,197
-Added primitive-only Blender modules, build_all.py, and render_lineup.py. Generated all six GLB assets and the 960×540 lineup PNG using Cycles CPU at 32 samples.
+20,250
+Completed design/DESIGN.md and formatted design/tokens.json, documenting palette, proportions, shape language and review quality bars. Tokens match the Blender materials.
 
-All six scenario tests pass. Repeated builds preserve identical node structures. Approval remains with the review station.
+All six scenario tests pass with npm test. Spec, assets, scripts and tests remain unchanged.

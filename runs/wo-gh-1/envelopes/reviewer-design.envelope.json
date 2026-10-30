@@ -5,7 +5,7 @@
   "work_order_id": "wo-gh-1",
   "artifact_path": "runs/wo-gh-1/reviewer-design.output.md",
   "status": "executed",
-  "created_at": "2026-10-30T12:16:34.913724+00:00",
+  "created_at": "2026-10-30T12:26:48.681931+00:00",
   "review": {
     "station": "reviewer-design",
     "verdict": "changes_requested",

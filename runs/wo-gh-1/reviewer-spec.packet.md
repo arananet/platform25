@@ -39,6 +39,11 @@ Done looks like:
 Palette and proportions are stated in the spec. No downloaded models, textures or images. No deployment in this work order; the run stops at the human gate with the lineup render as evidence.
 
 GitHub issue: https://github.com/arananet/platform25/issues/1
+
+Loopback round 2 directives (operator, from the round 1 reviews):
+- The spec revision produced in round 1 is operator approved: .openspec/specs/asset-factory/spec.md as committed for this round is the approved contract. Do not modify anything under .openspec/specs/ in this round.
+- reviewer-design finding: author design/DESIGN.md and design/tokens.json for this project, documenting the palette, the shape language and the quality bars from the spec Look section, so design review has its documented anchor. The tokens must match the colors the Blender scripts actually use.
+- Keep the assets, the scripts and the tests as they are unless a directive above requires a change: scenarios S1 to S6 already pass and must keep passing.
 - risk_hints: 
 - status: new
 

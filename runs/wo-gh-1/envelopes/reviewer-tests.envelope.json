@@ -5,16 +5,16 @@
   "work_order_id": "wo-gh-1",
   "artifact_path": "runs/wo-gh-1/reviewer-tests.output.md",
   "status": "executed",
-  "created_at": "2026-10-30T12:16:08.436077+00:00",
+  "created_at": "2026-10-30T12:26:18.594540+00:00",
   "review": {
     "station": "reviewer-tests",
     "verdict": "pass",
     "findings": [
-      "`npm test` ran 6 tests (S1 to S6): 6 pass, 0 fail, 0 skipped. Each test is named for its spec scenario.",
-      "S1 to S4 parse the real glb header and JSON chunk (magic, length, chunk type) from assets/*.glb. They check the six player part names (exactly one node each), the node name of each of the other five assets, and the 800 B to 5 MB size bounds.",
-      "S5 checks the PNG signature and the IHDR width and height (960x540) of evidence/asset-lineup.png. S6 scans every file under blender/ for import_scene, image.load and bpy.data.images.load, and rejects binary files.",
-      "Non-blocking gaps: S3 does not check that the named node is the only one. R4 determinism and the Cycles/64-sample limit have no tests, and the spec does not require any. A stray __pycache__ under blender/ would fail S6.",
-      "The review is written to reviews/wo-gh-1-reviewer-tests.md."
+      "`npm test` (node --test) runs 6 tests: S1 to S6 all pass, 0 fail and 0 skipped.",
+      "No files under .openspec/specs/, blender/, tests/ or assets/ differ from the committed tree, so the round 2 directives to leave the spec, scripts, tests and assets alone are respected.",
+      "The linear RGB values in design/tokens.json match the Principled BSDF base colors in blender/player.py, ground_block.py, platform_floating.py, spike.py, goal_flag.py, coin.py and the render_lineup.py backdrop. The shared material settings also match blender/common.py: roughness 0.48, metallic 0.55, 0.65 and 0.15, and coin emission strength 0.2.",
+      "design/DESIGN.md follows the spec Look section: coral body with teal limbs, stone and grass ground block, stone platform with a lighter top, light steel spike, gold emissive coin, white pole with coral flag. It also documents the render quality bars.",
+      "I did not check the hex values in tokens.json against the linear values. I did not run Blender or view the lineup PNG; the test suite only checks its dimensions, and visual acceptance belongs to the design reviewer and the human gate."
     ]
   },
   "configured_model": "claude-sonnet-5-5",

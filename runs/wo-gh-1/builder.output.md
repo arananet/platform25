@@ -1,5 +1,5 @@
-Added primitive-only Blender modules, build_all.py, and render_lineup.py. Generated all six GLB assets and the 960×540 lineup PNG using Cycles CPU at 32 samples.
+Completed design/DESIGN.md and formatted design/tokens.json, documenting palette, proportions, shape language and review quality bars. Tokens match the Blender materials.
 
-All six scenario tests pass. Repeated builds preserve identical node structures. Approval remains with the review station.
+All six scenario tests pass with npm test. Spec, assets, scripts and tests remain unchanged.
 
 {"model": "gpt-6-astra", "runtime": "codex"}

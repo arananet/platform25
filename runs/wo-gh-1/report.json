@@ -8,7 +8,7 @@
       "station": "intake",
       "status": "completed",
       "detail": "Work order normalized",
-      "duration_ms": 0.017,
+      "duration_ms": 0.018,
       "cost": null,
       "artifacts": [
         "runs/wo-gh-1/report.json"
@@ -21,7 +21,7 @@
       "station": "spec-writer",
       "status": "executed",
       "detail": "Executed by command; output written to runs/wo-gh-1/spec-writer.output.md",
-      "duration_ms": 21354.517,
+      "duration_ms": 25954.149,
       "cost": null,
       "artifacts": [
         "runs/wo-gh-1/spec-writer.output.md"
@@ -37,7 +37,7 @@
       "station": "test-writer",
       "status": "executed",
       "detail": "Executed by command; output written to runs/wo-gh-1/test-writer.output.md",
-      "duration_ms": 24436.41,
+      "duration_ms": 12382.086,
       "cost": null,
       "artifacts": [
         "runs/wo-gh-1/test-writer.output.md"
@@ -53,7 +53,7 @@
       "station": "builder",
       "status": "executed",
       "detail": "Executed by command; output written to runs/wo-gh-1/builder.output.md",
-      "duration_ms": 80972.339,
+      "duration_ms": 18842.764,
       "cost": null,
       "artifacts": [
         "runs/wo-gh-1/builder.output.md"
@@ -69,7 +69,7 @@
       "station": "reviewer-spec",
       "status": "executed",
       "detail": "Executed by command; output written to runs/wo-gh-1/reviewer-spec.output.md",
-      "duration_ms": 22325.667,
+      "duration_ms": 13282.66,
       "cost": null,
       "artifacts": [
         "runs/wo-gh-1/reviewer-spec.output.md"
@@ -85,7 +85,7 @@
       "station": "reviewer-security",
       "status": "executed",
       "detail": "Executed by command; output written to runs/wo-gh-1/reviewer-security.output.md",
-      "duration_ms": 12691.802,
+      "duration_ms": 14959.69,
       "cost": null,
       "artifacts": [
         "runs/wo-gh-1/reviewer-security.output.md"
@@ -101,7 +101,7 @@
       "station": "reviewer-tests",
       "status": "executed",
       "detail": "Executed by command; output written to runs/wo-gh-1/reviewer-tests.output.md",
-      "duration_ms": 12068.13,
+      "duration_ms": 11112.408,
       "cost": null,
       "artifacts": [
         "runs/wo-gh-1/reviewer-tests.output.md"
@@ -117,7 +117,7 @@
       "station": "reviewer-architecture",
       "status": "executed",
       "detail": "Executed by command; output written to runs/wo-gh-1/reviewer-architecture.output.md",
-      "duration_ms": 21057.307,
+      "duration_ms": 19854.899,
       "cost": null,
       "artifacts": [
         "runs/wo-gh-1/reviewer-architecture.output.md"
@@ -133,7 +133,7 @@
       "station": "reviewer-design",
       "status": "executed",
       "detail": "Executed by command; output written to runs/wo-gh-1/reviewer-design.output.md",
-      "duration_ms": 5419.975,
+      "duration_ms": 10231.868,
       "cost": null,
       "artifacts": [
         "runs/wo-gh-1/reviewer-design.output.md"
@@ -149,7 +149,7 @@
       "station": "approver",
       "status": "completed",
       "detail": "Approver verdict: changes_requested",
-      "duration_ms": 0.041,
+      "duration_ms": 0.046,
       "cost": null,
       "artifacts": [
         "runs/wo-gh-1/report.json"
@@ -161,9 +161,9 @@
     {
       "station": "approver",
       "status": "loopback",
-      "return_to": "spec-writer",
-      "detail": "Loopback to spec-writer: Naming contract met (R2, R3, S1-S3): the six assets exist in assets/. player.glb has six separate parts: torso, head, arm_left, arm_right, leg_left and leg_right. Each other asset has a node with its contracted name.; Dimensions and look match the spec: ground block 2x2x1, platform 2x1.2x0.4, spike about 0.8 tall, coin disc of radius 0.3 with its faces along Z, pole 2.2 tall with a triangular flag, player 1.8 tall with limb pivots at the top ends. The palette is built with bpy Principled BSDF only.; Pipeline matches the spec: build_all.py is the single entry point. render_lineup.py reuses the same build() functions with no importer, and renders with Cycles on CPU at 32 samples (at most 64) and 960x540. It creates assets/ and evidence/ if missing, and paths are relative to the repo root.; S6 holds: blender/ has no import_scene, image.load or bpy.data.images.load, and no binary or bytecode files. `npm test` passes 6/6 (S1-S6). The lineup render shows all six assets in a row.; Non-blocking: R4 (determinism) has no test of its own. The tests check node names only, not dimensions or materials, so those were verified by reading the code and the render.; Review file written to reviews/wo-gh-1-reviewer-spec.md.; No network access, subprocess, eval/exec or dynamic imports in blender/*.py or tests/asset-factory.test.js. The scripts import only bpy, mathutils, the stdlib (sys, pathlib, math) and sibling modules, so no external assets are loaded (spec S6).; File writes go only to ROOT/assets and ROOT/evidence, with fixed names derived from module names. No user-controlled paths.; package.json: only the test glob changed, to \"tests/**/*.test.js\". It adds no dependencies and no install scripts.; Minor, non-blocking: build_all.py puts the blender/ directory first on sys.path, so a future file named like a stdlib module would shadow it. No current filename collides.; The review is written to reviews/wo-gh-1-reviewer-security.md. I did not run the scripts or tests; this is a static read of the code.; `npm test` ran 6 tests (S1 to S6): 6 pass, 0 fail, 0 skipped. Each test is named for its spec scenario.; S1 to S4 parse the real glb header and JSON chunk (magic, length, chunk type) from assets/*.glb. They check the six player part names (exactly one node each), the node name of each of the other five assets, and the 800 B to 5 MB size bounds.; S5 checks the PNG signature and the IHDR width and height (960x540) of evidence/asset-lineup.png. S6 scans every file under blender/ for import_scene, image.load and bpy.data.images.load, and rejects binary files.; Non-blocking gaps: S3 does not check that the named node is the only one. R4 determinism and the Cycles/64-sample limit have no tests, and the spec does not require any. A stray __pycache__ under blender/ would fail S6.; The review is written to reviews/wo-gh-1-reviewer-tests.md.; The code fits the standing decisions in brain/project.md. There is one module per asset, with blender/build_all.py as the single entry point. render_lineup.py reuses build_all.ASSETS. Only primitives and procedural materials are used. The player is six named parts. Tests parse the glb files without Blender. There is no importer or image loader anywhere in blender/.; The approved contract was edited inside the feature change. .openspec/specs/asset-factory/spec.md is modified in the working tree. Its status changed from 'approved for build' to 'revised, awaiting approval'. The character look line and the render_lineup.py import clause were also rewritten. The builder and reviewer stations do not own the spec, so the code is now built against a spec that is no longer approved. Either re-approve the revised spec at the spec-writer stage or the human gate, or revert the edit and fit the code to the approved text.; package.json changes the test script from 'node --test tests/' to 'node --test \"tests/**/*.test.js\"'. The change is reasonable, but the spec and work order do not mention it. Record it.; The project has no brain/decisions directory. The only decision file is .anvil-factory/brain/decisions/0001-composable-stations.md, which concerns ANVIL stations and does not apply to the asset code. The review used the standing decisions in brain/project.md instead. I did not run Blender 4.5.15 in this station.; The review is written to reviews/wo-gh-1-reviewer-architecture.md.; No design system exists for this project. The project must define design/DESIGN.md and design/tokens.json before interface output can be reviewed against design standards.",
-      "reason": "Naming contract met (R2, R3, S1-S3): the six assets exist in assets/. player.glb has six separate parts: torso, head, arm_left, arm_right, leg_left and leg_right. Each other asset has a node with its contracted name.; Dimensions and look match the spec: ground block 2x2x1, platform 2x1.2x0.4, spike about 0.8 tall, coin disc of radius 0.3 with its faces along Z, pole 2.2 tall with a triangular flag, player 1.8 tall with limb pivots at the top ends. The palette is built with bpy Principled BSDF only.; Pipeline matches the spec: build_all.py is the single entry point. render_lineup.py reuses the same build() functions with no importer, and renders with Cycles on CPU at 32 samples (at most 64) and 960x540. It creates assets/ and evidence/ if missing, and paths are relative to the repo root.; S6 holds: blender/ has no import_scene, image.load or bpy.data.images.load, and no binary or bytecode files. `npm test` passes 6/6 (S1-S6). The lineup render shows all six assets in a row.; Non-blocking: R4 (determinism) has no test of its own. The tests check node names only, not dimensions or materials, so those were verified by reading the code and the render.; Review file written to reviews/wo-gh-1-reviewer-spec.md.; No network access, subprocess, eval/exec or dynamic imports in blender/*.py or tests/asset-factory.test.js. The scripts import only bpy, mathutils, the stdlib (sys, pathlib, math) and sibling modules, so no external assets are loaded (spec S6).; File writes go only to ROOT/assets and ROOT/evidence, with fixed names derived from module names. No user-controlled paths.; package.json: only the test glob changed, to \"tests/**/*.test.js\". It adds no dependencies and no install scripts.; Minor, non-blocking: build_all.py puts the blender/ directory first on sys.path, so a future file named like a stdlib module would shadow it. No current filename collides.; The review is written to reviews/wo-gh-1-reviewer-security.md. I did not run the scripts or tests; this is a static read of the code.; `npm test` ran 6 tests (S1 to S6): 6 pass, 0 fail, 0 skipped. Each test is named for its spec scenario.; S1 to S4 parse the real glb header and JSON chunk (magic, length, chunk type) from assets/*.glb. They check the six player part names (exactly one node each), the node name of each of the other five assets, and the 800 B to 5 MB size bounds.; S5 checks the PNG signature and the IHDR width and height (960x540) of evidence/asset-lineup.png. S6 scans every file under blender/ for import_scene, image.load and bpy.data.images.load, and rejects binary files.; Non-blocking gaps: S3 does not check that the named node is the only one. R4 determinism and the Cycles/64-sample limit have no tests, and the spec does not require any. A stray __pycache__ under blender/ would fail S6.; The review is written to reviews/wo-gh-1-reviewer-tests.md.; The code fits the standing decisions in brain/project.md. There is one module per asset, with blender/build_all.py as the single entry point. render_lineup.py reuses build_all.ASSETS. Only primitives and procedural materials are used. The player is six named parts. Tests parse the glb files without Blender. There is no importer or image loader anywhere in blender/.; The approved contract was edited inside the feature change. .openspec/specs/asset-factory/spec.md is modified in the working tree. Its status changed from 'approved for build' to 'revised, awaiting approval'. The character look line and the render_lineup.py import clause were also rewritten. The builder and reviewer stations do not own the spec, so the code is now built against a spec that is no longer approved. Either re-approve the revised spec at the spec-writer stage or the human gate, or revert the edit and fit the code to the approved text.; package.json changes the test script from 'node --test tests/' to 'node --test \"tests/**/*.test.js\"'. The change is reasonable, but the spec and work order do not mention it. Record it.; The project has no brain/decisions directory. The only decision file is .anvil-factory/brain/decisions/0001-composable-stations.md, which concerns ANVIL stations and does not apply to the asset code. The review used the standing decisions in brain/project.md instead. I did not run Blender 4.5.15 in this station.; The review is written to reviews/wo-gh-1-reviewer-architecture.md.; No design system exists for this project. The project must define design/DESIGN.md and design/tokens.json before interface output can be reviewed against design standards.",
+      "return_to": "builder",
+      "detail": "Loopback to builder: Scope is respected. `git status` shows no modifications under `.openspec/specs/`, `blender/`, `tests/`, `assets/` or `evidence/`. The only new content is `design/DESIGN.md` and `design/tokens.json`, which is what the round 2 directive asked for.; Every Principled BSDF base color in `blender/*.py` matches a linear triple in `design/tokens.json`: coral, teal, stone, grass, stoneTop, steel, gold, flagPole, flagCoral and backdrop. Metallic values (steel 0.55, gold 0.65, flagPole 0.15), gold emission 0.2 and roughness 0.48 (set in `blender/common.py`) also match. I spot-checked the hex values (coral, teal, backdrop) against the sRGB conversion and they are correct.; `DESIGN.md` covers the palette, the shape language and the quality bars from the spec Look section. The dimensions match the spec and code: ground 2x1x2, platform 2x0.4x1.2, spike about 0.8 tall, coin about 0.6 across, goal pole about 2.2 tall. The six named character parts are listed, the head top is at 1.58+0.22=1.8, the bevels are 0.045 and 0.065, and the render settings are 960x540, Cycles CPU, 64 samples.; Minor, not blocking: the lineup world background color (0.3, 0.3, 0.3) in `blender/render_lineup.py:44` is not in `tokens.json`. The spec only requires the asset colors to match, so this does not affect the verdict.; I did not re-run Blender or the test suite. The review is a static check of the design files against the scripts and the spec. S1 to S6 are unaffected because no code, test or asset file changed.; No security issues found. The change adds only design/DESIGN.md and design/tokens.json, which are static documentation and JSON. The tracked blender/, tests/, assets/, .openspec/ and package.json files show no diff against HEAD.; A grep of blender/ and tests/ found no network, subprocess, os.system, eval or exec use, and no importer or image-loader calls. The scripts use bpy primitives, bevel modifiers and Principled BSDF materials only, which fits R1 and S6.; The color values in design/tokens.json match the scripts: coral, teal, stone, grass, stoneTop, steel, gold, flagPole, flagCoral and backdrop, plus roughness 0.48, metallic 0.55/0.65/0.15 and gold emission 0.2. I did not check the hex conversions or the render settings.; Minor, non-security: tokens.json and DESIGN.md list bevels only for torso (0.045) and head (0.065). blender/player.py also applies 0.035 to the arms and legs, so this is a small documentation gap. No fix is needed to pass.; `npm test` (node --test) runs 6 tests: S1 to S6 all pass, 0 fail and 0 skipped.; No files under .openspec/specs/, blender/, tests/ or assets/ differ from the committed tree, so the round 2 directives to leave the spec, scripts, tests and assets alone are respected.; The linear RGB values in design/tokens.json match the Principled BSDF base colors in blender/player.py, ground_block.py, platform_floating.py, spike.py, goal_flag.py, coin.py and the render_lineup.py backdrop. The shared material settings also match blender/common.py: roughness 0.48, metallic 0.55, 0.65 and 0.15, and coin emission strength 0.2.; design/DESIGN.md follows the spec Look section: coral body with teal limbs, stone and grass ground block, stone platform with a lighter top, light steel spike, gold emissive coin, white pole with coral flag. It also documents the render quality bars.; I did not check the hex values in tokens.json against the linear values. I did not run Blender or view the lineup PNG; the test suite only checks its dimensions, and visual acceptance belongs to the design reviewer and the human gate.; The design/ files are the only new, untracked files (git status shows `?? design/`). The diff for .openspec, blender, assets and tests shows no changes, which matches the round 2 directives.; The linear RGB triples in design/tokens.json match the Blender scripts. These values appear in blender/*.py: coral (0.95, 0.19, 0.12), teal (0.015, 0.24, 0.23), stone (0.36, 0.32, 0.27), grass (0.18, 0.55, 0.065), stoneTop (0.63, 0.58, 0.48), steel (0.65, 0.72, 0.77), flag pole (0.88, 0.91, 0.93), flag cloth (0.95, 0.12, 0.075) and backdrop (0.055, 0.075, 0.10). I did not individually map gold (1.0, 0.57, 0.025), which also appears in the scripts.; The material and shape values also match the code. Roughness is 0.48 in blender/common.py:18. Metallic is 0.55 for the spike, 0.65 for the coin and 0.15 for the pole. Coin emission is 0.2. Bevels are 0.045 for the torso and 0.065 for the head (blender/player.py:8-9). The lineup uses AgX.; The render settings in tokens.json (960x540, Cycles CPU, maxSamples 64) are consistent with the project decisions. render_lineup.py uses 32 samples, which is within the 64 cap.; DESIGN.md follows the project's standing decisions in brain/project.md: primitives and modifiers only, procedural materials, no external assets, the six named player parts, and the clean, bold, readable look with a limited palette. It defers visual acceptance to the separate reviewer and the human gate rather than approving it itself.; The architecture review input `brain/decisions` does not exist. The decisions are in the 'Standing decisions' section of brain/project.md, and I reviewed against that section. Nothing else is missing.; Minor, non-blocking: tokens.json lists only the colors, roughness and bevels, so the shape dimensions (ground 2x1x2, platform 2x0.4x1.2, spike 0.8 tall, coin 0.6, flag pole 2.2) appear only in DESIGN.md prose. I did not check them against the scripts.; No design system exists for this project. The project must define design/DESIGN.md and design/tokens.json before interface output can be reviewed against design standards.",
+      "reason": "Scope is respected. `git status` shows no modifications under `.openspec/specs/`, `blender/`, `tests/`, `assets/` or `evidence/`. The only new content is `design/DESIGN.md` and `design/tokens.json`, which is what the round 2 directive asked for.; Every Principled BSDF base color in `blender/*.py` matches a linear triple in `design/tokens.json`: coral, teal, stone, grass, stoneTop, steel, gold, flagPole, flagCoral and backdrop. Metallic values (steel 0.55, gold 0.65, flagPole 0.15), gold emission 0.2 and roughness 0.48 (set in `blender/common.py`) also match. I spot-checked the hex values (coral, teal, backdrop) against the sRGB conversion and they are correct.; `DESIGN.md` covers the palette, the shape language and the quality bars from the spec Look section. The dimensions match the spec and code: ground 2x1x2, platform 2x0.4x1.2, spike about 0.8 tall, coin about 0.6 across, goal pole about 2.2 tall. The six named character parts are listed, the head top is at 1.58+0.22=1.8, the bevels are 0.045 and 0.065, and the render settings are 960x540, Cycles CPU, 64 samples.; Minor, not blocking: the lineup world background color (0.3, 0.3, 0.3) in `blender/render_lineup.py:44` is not in `tokens.json`. The spec only requires the asset colors to match, so this does not affect the verdict.; I did not re-run Blender or the test suite. The review is a static check of the design files against the scripts and the spec. S1 to S6 are unaffected because no code, test or asset file changed.; No security issues found. The change adds only design/DESIGN.md and design/tokens.json, which are static documentation and JSON. The tracked blender/, tests/, assets/, .openspec/ and package.json files show no diff against HEAD.; A grep of blender/ and tests/ found no network, subprocess, os.system, eval or exec use, and no importer or image-loader calls. The scripts use bpy primitives, bevel modifiers and Principled BSDF materials only, which fits R1 and S6.; The color values in design/tokens.json match the scripts: coral, teal, stone, grass, stoneTop, steel, gold, flagPole, flagCoral and backdrop, plus roughness 0.48, metallic 0.55/0.65/0.15 and gold emission 0.2. I did not check the hex conversions or the render settings.; Minor, non-security: tokens.json and DESIGN.md list bevels only for torso (0.045) and head (0.065). blender/player.py also applies 0.035 to the arms and legs, so this is a small documentation gap. No fix is needed to pass.; `npm test` (node --test) runs 6 tests: S1 to S6 all pass, 0 fail and 0 skipped.; No files under .openspec/specs/, blender/, tests/ or assets/ differ from the committed tree, so the round 2 directives to leave the spec, scripts, tests and assets alone are respected.; The linear RGB values in design/tokens.json match the Principled BSDF base colors in blender/player.py, ground_block.py, platform_floating.py, spike.py, goal_flag.py, coin.py and the render_lineup.py backdrop. The shared material settings also match blender/common.py: roughness 0.48, metallic 0.55, 0.65 and 0.15, and coin emission strength 0.2.; design/DESIGN.md follows the spec Look section: coral body with teal limbs, stone and grass ground block, stone platform with a lighter top, light steel spike, gold emissive coin, white pole with coral flag. It also documents the render quality bars.; I did not check the hex values in tokens.json against the linear values. I did not run Blender or view the lineup PNG; the test suite only checks its dimensions, and visual acceptance belongs to the design reviewer and the human gate.; The design/ files are the only new, untracked files (git status shows `?? design/`). The diff for .openspec, blender, assets and tests shows no changes, which matches the round 2 directives.; The linear RGB triples in design/tokens.json match the Blender scripts. These values appear in blender/*.py: coral (0.95, 0.19, 0.12), teal (0.015, 0.24, 0.23), stone (0.36, 0.32, 0.27), grass (0.18, 0.55, 0.065), stoneTop (0.63, 0.58, 0.48), steel (0.65, 0.72, 0.77), flag pole (0.88, 0.91, 0.93), flag cloth (0.95, 0.12, 0.075) and backdrop (0.055, 0.075, 0.10). I did not individually map gold (1.0, 0.57, 0.025), which also appears in the scripts.; The material and shape values also match the code. Roughness is 0.48 in blender/common.py:18. Metallic is 0.55 for the spike, 0.65 for the coin and 0.15 for the pole. Coin emission is 0.2. Bevels are 0.045 for the torso and 0.065 for the head (blender/player.py:8-9). The lineup uses AgX.; The render settings in tokens.json (960x540, Cycles CPU, maxSamples 64) are consistent with the project decisions. render_lineup.py uses 32 samples, which is within the 64 cap.; DESIGN.md follows the project's standing decisions in brain/project.md: primitives and modifiers only, procedural materials, no external assets, the six named player parts, and the clean, bold, readable look with a limited palette. It defers visual acceptance to the separate reviewer and the human gate rather than approving it itself.; The architecture review input `brain/decisions` does not exist. The decisions are in the 'Standing decisions' section of brain/project.md, and I reviewed against that section. Nothing else is missing.; Minor, non-blocking: tokens.json lists only the colors, roughness and bevels, so the shape dimensions (ground 2x1x2, platform 2x0.4x1.2, spike 0.8 tall, coin 0.6, flag pole 2.2) appear only in DESIGN.md prose. I did not check them against the scripts.; No design system exists for this project. The project must define design/DESIGN.md and design/tokens.json before interface output can be reviewed against design standards.",
       "duration_ms": 0.0,
       "cost": null,
       "artifacts": [],
@@ -175,7 +175,7 @@
       "station": "triage-human",
       "status": "completed",
       "detail": "Human review: required",
-      "duration_ms": 0.006,
+      "duration_ms": 0.008,
       "cost": null,
       "artifacts": [],
       "configured_model": "default",
@@ -186,7 +186,7 @@
       "station": "deployer",
       "status": "packet_ready",
       "detail": "Packet written to runs/wo-gh-1/deployer.packet.md",
-      "duration_ms": 0.088,
+      "duration_ms": 0.194,
       "cost": null,
       "artifacts": [
         "runs/wo-gh-1/deployer.packet.md"
@@ -199,7 +199,7 @@
       "station": "observer",
       "status": "executed",
       "detail": "Executed by command; output written to runs/wo-gh-1/observer.output.md",
-      "duration_ms": 13723.611,
+      "duration_ms": 15223.618,
       "cost": null,
       "artifacts": [
         "runs/wo-gh-1/observer.output.md"
@@ -236,7 +236,7 @@
         },
         {
           "station": "reviewer-architecture",
-          "verdict": "changes_requested"
+          "verdict": "pass"
         },
         {
           "station": "reviewer-design",
@@ -250,7 +250,7 @@
         "reviewer-architecture",
         "reviewer-design"
       ],
-      "rule": "Reviewers reviewer-architecture, reviewer-design requested changes."
+      "rule": "Reviewer reviewer-design requested changes."
     },
     "human_gate": {
       "required": true,
