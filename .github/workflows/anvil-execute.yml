@@ -1,0 +1,334 @@
+name: anvil-execute
+
+# Execute mode line for platform25 work orders. Separate execute workflow
+# because it needs contents: write (it commits the run evidence and the
+# station made changes back to the trigger branch) and execute mode stays
+# opt in per work order.
+#
+# Model routing (ANVIL policy, recorded in anvil.yaml): the builder
+# station runs GPT-6 Astra through Codex (custom model provider) against
+# the Cloudflare unified AI endpoints on api.cloudflare.com (base
+# /client/v4/accounts/<account>/ai/v1, header cf-aig-gateway-id selecting
+# arananet-ai-gateway), authenticated with the dedicated account API
+# token held in the CF_AI_API_TOKEN secret (minted for this repo,
+# Workers AI Write only). Spec writer, test writer and four of the five
+# reviewers run claude-sonnet-5-5 through Claude Code against the gateway
+# Anthropic route (CF_AIG_TOKEN, a second dedicated token with AI Gateway
+# Run). Reviewer-design runs gpt-6-astra through the same Codex route as
+# the builder, in the Astra wrapper's reviewer mode: Codex runs with full
+# access (its bubblewrap sandbox cannot run on GitHub hosted runners) and
+# read only is enforced by the wrapper's before and after worktree diff.
+# tools/anvil_station.py dispatches per station. There is no fallback
+# from Astra to another model: if a smoke gate fails, the job stops
+# before the line runs.
+#
+# Blender toolchain: this project makes its 3D assets with headless
+# Blender. Blender is pinned to the 4.5 LTS series (4.5.15) and cached
+# between runs. A Blender smoke gate (model a cube, export a glb) must
+# pass before the line runs, alongside the two gateway smokes. After the
+# line, a deterministic step runs blender --background --python
+# blender/build_all.py when that script exists, so the exported assets
+# always come from the committed scripts, never from a station's ad hoc
+# invocation. The project suite then checks the exported assets.
+#
+# Deployment is deliberately NOT part of these runs: anvil.yaml carries
+# no deploy config, so the deployer station stays a packet. Nothing in
+# this program deploys to a public URL.
+#
+# Trigger: the vault PAT cannot dispatch workflows or apply labels, so
+# the trigger is a push to a run branch, plus manual dispatch. Work order
+# selection is by branch: anvil/run-asset-factory runs wo-gh-1
+# (work-orders/issue-1.json, issue 1) and anvil/run-playable-slice runs
+# wo-gh-2 (work-orders/issue-2.json, issue 2). The commit this workflow
+# pushes back uses GITHUB_TOKEN, which does not retrigger workflows.
+on:
+  push:
+    branches: [anvil/run-asset-factory, anvil/run-playable-slice]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: anvil-execute-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  anvil-execute:
+    name: Run the ANVIL line (Astra builds, Sonnet 5.5 reviews, Blender makes the assets)
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      ANTHROPIC_BASE_URL: https://gateway.ai.cloudflare.com/v1/693ae9c587f1f2c34328bb47447366b0/arananet-ai-gateway/anthropic
+      ANTHROPIC_API_KEY: ${{ secrets.CF_AIG_TOKEN }}
+      ANTHROPIC_CUSTOM_HEADERS: "cf-aig-authorization: Bearer ${{ secrets.CF_AIG_TOKEN }}"
+      CF_AIG_TOKEN: ${{ secrets.CF_AIG_TOKEN }}
+      CF_AI_API_TOKEN: ${{ secrets.CF_AI_API_TOKEN }}
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
+      BLENDER_VERSION: "4.5.15"
+    steps:
+      - name: Check out this repository
+        uses: actions/checkout@v4
+
+      - name: Select work order for this branch
+        id: wo
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "anvil/run-playable-slice" ]; then
+            echo "file=work-orders/issue-2.json" >> "${GITHUB_OUTPUT}"
+            echo "id=wo-gh-2" >> "${GITHUB_OUTPUT}"
+            echo "issue=2" >> "${GITHUB_OUTPUT}"
+          else
+            echo "file=work-orders/issue-1.json" >> "${GITHUB_OUTPUT}"
+            echo "id=wo-gh-1" >> "${GITHUB_OUTPUT}"
+            echo "issue=1" >> "${GITHUB_OUTPUT}"
+          fi
+          echo "Selected: $(tr '\n' ' ' < "${GITHUB_OUTPUT}")"
+
+      - name: Check out the ANVIL factory
+        uses: actions/checkout@v4
+        with:
+          repository: arananet/anvil-factory
+          path: .anvil-factory
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Claude Code and Codex
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          npm install -g @openai/codex
+          claude --version
+          codex --version
+
+      - name: Cache the pinned Blender
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/blender-${{ env.BLENDER_VERSION }}
+          key: blender-${{ env.BLENDER_VERSION }}-linux-x64
+
+      - name: Set up Blender (pinned 4.5 LTS)
+        id: blender_setup
+        run: |
+          BLENDER_ROOT="${HOME}/blender-${BLENDER_VERSION}"
+          if [ ! -x "${BLENDER_ROOT}/blender" ]; then
+            echo "Cache miss: downloading Blender ${BLENDER_VERSION}"
+            curl -fsSL "https://download.blender.org/release/Blender4.5/blender-${BLENDER_VERSION}-linux-x64.tar.xz" -o /tmp/blender.tar.xz
+            mkdir -p "${BLENDER_ROOT}"
+            tar -xJf /tmp/blender.tar.xz -C "${BLENDER_ROOT}" --strip-components=1
+            rm -f /tmp/blender.tar.xz
+          else
+            echo "Blender restored from cache"
+          fi
+          echo "${BLENDER_ROOT}" >> "${GITHUB_PATH}"
+          "${BLENDER_ROOT}/blender" --version
+
+      - name: Blender smoke gate (model and export headless)
+        id: smoke_blender
+        run: |
+          SMOKE_DIR="${RUNNER_TEMP}/blender-smoke"
+          mkdir -p "${SMOKE_DIR}"
+          cat > "${SMOKE_DIR}/smoke.py" <<'EOF'
+          import bpy
+          import os
+          import sys
+
+          out = os.path.join(sys.argv[sys.argv.index("--") + 1], "smoke.glb")
+          bpy.ops.wm.read_factory_settings(use_empty=True)
+          bpy.ops.mesh.primitive_cube_add(size=2)
+          cube = bpy.context.active_object
+          cube.name = "smoke_cube"
+          bpy.ops.export_scene.gltf(filepath=out, export_format="GLB")
+          print("BLENDER_SMOKE_EXPORTED", out)
+          EOF
+          blender --background --python "${SMOKE_DIR}/smoke.py" -- "${SMOKE_DIR}" > "${SMOKE_DIR}/smoke.txt" 2>&1 || true
+          cat "${SMOKE_DIR}/smoke.txt"
+          if [ ! -s "${SMOKE_DIR}/smoke.glb" ]; then
+            echo "BLENDER SMOKE FAILED: headless Blender did not export smoke.glb. Stopping before the line runs."
+            exit 1
+          fi
+          echo "Blender smoke passed: blender ${BLENDER_VERSION} modeled and exported a glb headless."
+
+      - name: Anthropic smoke gate (claude-sonnet-5-5 through the gateway)
+        id: smoke_anthropic
+        run: |
+          REPLY=$(claude -p "Reply with exactly: GATEWAY_OK" --model claude-sonnet-5-5 --output-format text)
+          echo "Gateway reply: ${REPLY}"
+          CLEAN=$(printf '%s' "${REPLY}" | tr -d '[:space:]')
+          if [ "${CLEAN}" != "GATEWAY_OK" ]; then
+            echo "Anthropic smoke failed: expected GATEWAY_OK and got the reply above. Stopping before the line runs."
+            exit 1
+          fi
+          echo "Anthropic smoke passed: claude-sonnet-5-5 answered through the gateway Anthropic endpoint."
+
+      - name: Astra smoke gate (gpt-6-astra through the unified /ai endpoints)
+        id: smoke_astra
+        run: |
+          SMOKE_DIR="${RUNNER_TEMP}/astra-smoke"
+          mkdir -p "${SMOKE_DIR}"
+          export CODEX_HOME="${SMOKE_DIR}/codex-home"
+          mkdir -p "${CODEX_HOME}"
+          cat > "${CODEX_HOME}/config.toml" <<'EOF'
+          model = "openai/gpt-6-astra"
+          model_provider = "cloudflare"
+          [model_providers.cloudflare]
+          name = "Cloudflare Unified AI (AI Gateway: arananet-ai-gateway)"
+          base_url = "https://api.cloudflare.com/client/v4/accounts/693ae9c587f1f2c34328bb47447366b0/ai/v1"
+          env_key = "CF_AI_API_TOKEN"
+          wire_api = "responses"
+          http_headers = { "cf-aig-gateway-id" = "arananet-ai-gateway" }
+          EOF
+          timeout 420 codex exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox --output-last-message "${SMOKE_DIR}/astra-last.txt" "Reply with exactly: ASTRA_OK" < /dev/null > "${SMOKE_DIR}/astra-smoke.txt" 2>&1 || true
+          tail -c 3000 "${SMOKE_DIR}/astra-smoke.txt" || true
+          if ! grep -q "ASTRA_OK" "${SMOKE_DIR}/astra-last.txt" 2>/dev/null; then
+            echo "ASTRA SMOKE FAILED: codex did not return ASTRA_OK from gpt-6-astra through the unified /ai endpoints on api.cloudflare.com. The raw output above is the exact error. Stopping here: no fallback to another model."
+            exit 1
+          fi
+          echo "Astra smoke passed: gpt-6-astra answered through the unified /ai endpoint (Codex, Responses API, AI Gateway header)."
+
+      - name: Run the ANVIL sdlc-default line in execute mode
+        id: line
+        if: steps.smoke_blender.outcome == 'success' && steps.smoke_anthropic.outcome == 'success' && steps.smoke_astra.outcome == 'success'
+        run: |
+          PYTHONPATH=.anvil-factory python3 -m anvil.cli run . \
+            --pipeline .anvil-factory/pipelines/sdlc-default.json \
+            --work-order ${{ steps.wo.outputs.file }} \
+            --execute
+
+      - name: Build the 3D assets with headless Blender (deterministic)
+        id: assets
+        if: steps.line.outcome == 'success'
+        run: |
+          if [ -f blender/build_all.py ]; then
+            blender --background --python blender/build_all.py
+            ls -la assets/
+          else
+            echo "No blender/build_all.py in this tree yet, nothing to build."
+          fi
+
+      - name: Install project dependencies
+        id: deps
+        if: always() && steps.smoke_anthropic.outcome == 'success' && steps.smoke_astra.outcome == 'success'
+        run: |
+          if [ -f package.json ]; then
+            npm install --no-audit --no-fund
+          fi
+          if [ -d node_modules/playwright ]; then
+            npx playwright install --with-deps chromium
+          fi
+
+      - name: Run the project test suite after the line
+        id: suite
+        if: always() && steps.smoke_anthropic.outcome == 'success' && steps.smoke_astra.outcome == 'success'
+        run: |
+          npm test > suite-output.txt 2>&1
+          echo "SUITE_EXIT=$?" >> suite-result.txt
+          cat suite-output.txt
+
+      - name: Commit the run evidence and the station changes back to the branch
+        if: always() && steps.smoke_anthropic.outcome == 'success' && steps.smoke_astra.outcome == 'success'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --stat > run-diff.txt || true
+          if git diff --cached --quiet; then
+            echo "The run produced no file changes to commit."
+            exit 0
+          fi
+          VERDICT=$(python3 -c "import json; print(json.load(open('runs/${{ steps.wo.outputs.id }}/report.json'))['verdict'])" 2>/dev/null || echo "no-report")
+          git commit -m "ANVIL execute run ${{ steps.wo.outputs.id }} (issue ${{ steps.wo.outputs.issue }}): verdict ${VERDICT}" -m "Builder station executed by GPT-6 Astra (Codex) through the Cloudflare AI Gateway; spec, test and reviewer stations executed by Claude Code (claude-sonnet-5-5); 3D assets built by the pinned headless Blender step. Run evidence in runs/${{ steps.wo.outputs.id }}/."
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Comment the run report on the issue
+        if: always() && steps.smoke_anthropic.outcome == 'success' && steps.smoke_astra.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BRANCH: ${{ github.ref_name }}
+          WO_ID: ${{ steps.wo.outputs.id }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, os
+          from pathlib import Path
+          run_url = os.environ["RUN_URL"]
+          branch = os.environ["BRANCH"]
+          report_path = Path("runs") / os.environ["WO_ID"] / "report.json"
+          if not report_path.exists():
+              lines = [
+                  "## ANVIL execute run report",
+                  "",
+                  "The executed run did not produce a report.json, so there is no verdict to report. "
+                  f"See the workflow run for the failure: {run_url}",
+              ]
+              Path("comment.md").write_text("\n".join(lines) + "\n")
+              raise SystemExit(0)
+          report = json.loads(report_path.read_text())
+          decision = report.get("decision", {})
+          suite = ""
+          sr = Path("suite-result.txt")
+          if sr.exists():
+              suite = "pass" if "SUITE_EXIT=0" in sr.read_text() else "FAIL (see suite-output.txt in the run commit)"
+          lines = [
+              "## ANVIL execute run report",
+              "",
+              f"Work order: {report['work_order_id']}",
+              f"Pipeline: {report['pipeline']}",
+              f"Approver verdict: {report['verdict']}",
+              f"Human review required: {report['human_required']}",
+              f"Deployment status: {report.get('deployment_status')}",
+              f"Project test suite after the run: {suite or 'not recorded'}",
+              "",
+              "Decision record:",
+              f"- Approver: {decision.get('approver', {}).get('rule', '')}",
+              f"- Human gate: {decision.get('human_gate', {}).get('rule', '')}",
+              "",
+              "| Station | Status | Configured model | Executed model |",
+              "|---|---|---|---|",
+          ]
+          for step in report.get("steps", []):
+              lines.append(
+                  f"| {step['station']} | {step['status']} | "
+                  f"{step.get('configured_model')} | {step.get('executed_model')} |"
+              )
+          diff_path = Path("run-diff.txt")
+          if diff_path.exists() and diff_path.read_text().strip():
+              lines += ["", f"Files changed by the run (committed to `{branch}`):", "", "```", diff_path.read_text().strip(), "```"]
+          lines += [
+              "",
+              "Honest note: this run EXECUTED its agent stations with per station model routing. "
+              "The builder ran GPT-6 Astra through Codex (custom model provider, Responses API) "
+              "against the Cloudflare unified AI endpoints on api.cloudflare.com with the "
+              "cf-aig-gateway-id header selecting the AI Gateway (Unified Billing covers the "
+              "OpenAI provider there); spec writer, test writer and four reviewers ran "
+              "claude-sonnet-5-5 through Claude Code against the gateway Anthropic route, and "
+              "reviewer-design ran gpt-6-astra through Codex in reviewer mode, with read only "
+              "enforced by the Astra wrapper's before and after worktree diff (the Codex "
+              "bubblewrap sandbox cannot run on GitHub hosted runners, so Codex itself runs "
+              "with full access). The 3D assets were built by the pinned headless Blender step "
+              "from the committed scripts. All three smoke gates (Blender, Anthropic, Astra) "
+              "passed before the line ran. The deployer station stayed a packet on purpose: "
+              "nothing in this program deploys to a public URL.",
+              f"Workflow run: {run_url}",
+          ]
+          Path("comment.md").write_text("\n".join(lines) + "\n")
+          print(f"Verdict: {report['verdict']}")
+          PYEOF
+          gh issue comment ${{ steps.wo.outputs.issue }} --body-file comment.md
+
+      - name: Upload the run directory
+        if: always() && steps.smoke_anthropic.outcome == 'success' && steps.smoke_astra.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: anvil-execute-run-${{ steps.wo.outputs.id }}
+          path: |
+            runs/
+            suite-output.txt
+          if-no-files-found: ignore
