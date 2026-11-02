@@ -1,0 +1,25 @@
+{
+  "schema": "anvil/envelope@1",
+  "from_station": "reviewer-security",
+  "to_station": "reviewer-tests",
+  "work_order_id": "wo-gh-1",
+  "artifact_path": "runs/wo-gh-1/reviewer-security.output.md",
+  "status": "executed",
+  "created_at": "2026-10-30T12:26:07.481825+00:00",
+  "review": {
+    "station": "reviewer-security",
+    "verdict": "pass",
+    "findings": [
+      "No security issues found. The change adds only design/DESIGN.md and design/tokens.json, which are static documentation and JSON. The tracked blender/, tests/, assets/, .openspec/ and package.json files show no diff against HEAD.",
+      "A grep of blender/ and tests/ found no network, subprocess, os.system, eval or exec use, and no importer or image-loader calls. The scripts use bpy primitives, bevel modifiers and Principled BSDF materials only, which fits R1 and S6.",
+      "The color values in design/tokens.json match the scripts: coral, teal, stone, grass, stoneTop, steel, gold, flagPole, flagCoral and backdrop, plus roughness 0.48, metallic 0.55/0.65/0.15 and gold emission 0.2. I did not check the hex conversions or the render settings.",
+      "Minor, non-security: tokens.json and DESIGN.md list bevels only for torso (0.045) and head (0.065). blender/player.py also applies 0.035 to the arms and legs, so this is a small documentation gap. No fix is needed to pass."
+    ]
+  },
+  "configured_model": "claude-sonnet-5-5",
+  "executor": {
+    "kind": "command",
+    "detail": "python3"
+  },
+  "executed_model": "claude-sonnet-5-5"
+}
