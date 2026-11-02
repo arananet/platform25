@@ -1,0 +1,1442 @@
+WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir "/tmp" (codex_home: AbsolutePathBuf("/tmp/anvil-codex-home-6ba5pk9g"))
+Reading additional input from stdin...
+OpenAI Codex v0.166.0
+--------
+workdir: /home/runner/work/platform25/platform25
+model: openai/gpt-6-astra
+provider: cloudflare
+approval: never
+sandbox: danger-full-access
+reasoning effort: none
+reasoning summaries: none
+session id: 01a18de5-c95b-7cf1-8a63-f8f924516c71
+--------
+user
+You are executing an ANVIL station packet inside this repository. Follow the packet exactly, edit the files it asks for, and finish with a brief plain text summary of what you changed.
+
+## Station prompt
+
+# Builder
+
+## Role
+Implement the spec so the scenario tests pass.
+
+## Inputs
+- spec
+- tests
+
+## Outputs
+- code change
+
+## Rules
+- Work only from the inputs listed above and the work order in the packet.
+- Produce the output as a file in the repo, not as chat text.
+- If the inputs are not enough, say what is missing instead of guessing.
+- Never approve your own work. Approval belongs to a different station.
+- Keep the change small and mapped to a spec scenario where one applies.
+
+
+## Work order
+
+- id: wo-gh-2
+- kind: feature
+- title: Playable slice: a 2.5D course you can run, jump and finish in the browser
+- source: github-issue
+- description: Build the playable slice of Platform 2.5, exactly as specified in .openspec/specs/playable-slice/spec.md (the contract; read it first, together with design/DESIGN.md and design/tokens.json for the look). Work order 1 (issue 1) was accepted by the owner on the evidence on 2026-10-30; this branch starts from its evidence head, so assets/, blender/, design/ and the asset factory tests are already in tree and must keep passing.
+
+Done looks like:
+- index.html plus src/ implement the game with Vite and Three.js (three and vite as dependencies, playwright as a devDependency, all from npm): a side view 2.5D course of about 60 units built from the six contracted assets in assets/ (player, ground_block, platform_floating, spike, coin, goal_flag), laid out from a course data table in code with every feature the spec lists in order (flat opening, coin 1 at about x = 5, a floating platform step over a pit, ground spikes, a 3 unit gap, a rising platform section, the goal flag at about x = 58, at least 8 coins).
+- Controls and rules per spec: A/D or arrow keys run, Space or W jumps; fixed timestep physics with gravity, box collision and landing on platform tops; spikes and falls reset to the last grounded position with coins kept; the timer starts on first movement and stops at the goal; reaching the flag shows a completion overlay with coins and time, and R restarts.
+- The character animates in code: pivot groups at the top end of arm_left, arm_right, leg_left and leg_right swing the limbs in opposite phase while running, addressed by the contracted part names.
+- The game exposes the spec's test hook (window.__platform25 with getState and warpTo) so the automated checks can observe and verify play.
+- Project tests under tests/ (node --test, run by npm test) verify spec scenarios S1 to S6: static checks on the entry, course data and declared dependencies, plus one Playwright browser check that builds the game, serves dist/ with vite preview, launches Chromium headless with software WebGL flags, drives the character with scripted keys to prove movement, a jump landing and a first coin pickup with no assistance, uses warpTo once to stand near the goal and walks into the flag with real key input, saves evidence/play-spawn.png, evidence/play-mid.png and evidence/play-goal.png at 1280 by 720, and requires ZERO console and page errors.
+- npm run build succeeds and the work order 1 asset factory suite still passes.
+
+No downloaded models, textures, images or fonts. No deployment in this work order; the run stops at the human gate with the screenshots as evidence.
+
+GitHub issue: https://github.com/arananet/platform25/issues/2
+- risk_hints: 
+- status: new
+
+## Upstream steps
+
+- intake: completed
+- spec-writer: executed
+- test-writer: executed
+
+## Project design
+
+### Design tokens
+
+```json
+{
+  "$description": "Platform 2.5 asset palette. 'linear' values are the exact Principled BSDF Base Color values used in blender/*.py; 'hex' is the sRGB equivalent.",
+  "color": {
+    "coral": {
+      "linear": [
+        0.95,
+        0.19,
+        0.12
+      ],
+      "hex": "#f97961",
+      "use": "player torso and head (blender/player.py)"
+    },
+    "teal": {
+      "linear": [
+        0.015,
+        0.24,
+        0.23
+      ],
+      "hex": "#218684",
+      "use": "player arms and legs (blender/player.py)"
+    },
+    "stone": {
+      "linear": [
+        0.36,
+        0.32,
+        0.27
+      ],
+      "hex": "#a2998e",
+      "use": "ground block sides, floating platform body"
+    },
+    "grass": {
+      "linear": [
+        0.18,
+        0.55,
+        0.065
+      ],
+      "hex": "#76c448",
+      "use": "ground block top face"
+    },
+    "stoneTop": {
+      "linear": [
+        0.63,
+        0.58,
+        0.48
+      ],
+      "hex": "#d0c8b8",
+      "use": "floating platform top"
+    },
+    "steel": {
+      "linear": [
+        0.65,
+        0.72,
+        0.77
+      ],
+      "hex": "#d3dde3",
+      "use": "spike",
+      "metallic": 0.55
+    },
+    "gold": {
+      "linear": [
+        1.0,
+        0.57,
+        0.025
+      ],
+      "hex": "#ffc72c",
+      "use": "coin",
+      "metallic": 0.65,
+      "emissionStrength": 0.2
+    },
+    "flagPole": {
+      "linear": [
+        0.88,
+        0.91,
+        0.93
+      ],
+      "hex": "#f1f5f7",
+      "use": "goal flag pole",
+      "metallic": 0.15
+    },
+    "flagCoral": {
+      "linear": [
+        0.95,
+        0.12,
+        0.075
+      ],
+      "hex": "#f9614d",
+      "use": "goal flag cloth"
+    },
+    "backdrop": {
+      "linear": [
+        0.055,
+        0.075,
+        0.1
+      ],
+      "hex": "#424d59",
+      "use": "lineup render ground plane (blender/render_lineup.py)"
+    }
+  },
+  "material": {
+    "roughness": 0.48,
+    "textures": false,
+    "shader": "Principled BSDF, flat procedural base color"
+  },
+  "shape": {
+    "language": "primitives and modifiers only; bold boxes and cylinders with small bevels",
+    "bevel": {
+      "torso": 0.045,
+      "head": 0.065
+    }
+  },
+  "render": {
+    "width": 960,
+    "height": 540,
+    "engine": "CYCLES",
+    "device": "CPU",
+    "maxSamples": 64
+  }
+}
+```
+codex
+I’ll read the spec, design guidance, and tests first, then implement the slice and run both the gameplay and asset checks.
+
+exec
+/bin/bash -lc 'cat .openspec/specs/playable-slice/spec.md design/DESIGN.md design/tokens.json' in /home/runner/work/platform25/platform25
+ succeeded in 0ms:
+# Playable Slice
+
+Status: approved for build
+Slug: playable-slice
+
+## Roles
+- implementer: builds the change described here
+- reviewer: checks the change against this spec
+- qa: checks the scenarios below with tests
+- product_owner: owns the purpose and accepts the result
+
+## Purpose
+
+Platform 2.5 has its assets (work order 1, owner accepted on the evidence on 2026-10-30). This spec covers the playable slice: a small Vite plus Three.js game that loads the six contracted `.glb` assets from `assets/` and turns them into a side view 2.5D course the player can run, jump and finish in the browser. The slice is the proof that the asset contract works in a real game: the character's six named parts are animated in code, the course is built from the exported pieces, and an automated headless browser pass plays the opening of the course with scripted keys and proves movement, a jump landing and a coin pickup with zero console errors.
+
+## Product shape
+
+- `index.html` at the repo root loads the game as an ES module from `src/main.js`. Supporting modules under `src/` are the builder's choice.
+- `package.json` gains `three` and `vite` as dependencies and `playwright` as a devDependency, from npm. The existing scripts stay: `npm run dev`, `npm run build`, `npm run preview`, `npm test`.
+- The game loads the six assets from `assets/` by their contracted paths. No downloaded models, textures, images or fonts; the page background, HUD and overlay are DOM and CSS with the project palette.
+- The build output is the standard Vite `dist/`.
+
+## The course
+
+A single course about 60 units long along plus X, built from a course data table in code (an array of placements), so tests and reviewers can read the layout without running the game. Ground tops sit at y = 0 unless a placement says otherwise. Required features, in order from spawn:
+
+- Spawn on flat ground at about x = 1. The opening stretch is flat ground blocks at least 12 units long.
+- Coin 1 on the opening flat stretch at about x = 5, at standing pickup height (about y = 1.2), so running through it collects it with no jump.
+- A floating platform used as a step over a shallow pit in the second segment (platform top about y = 1.2), with a coin above it.
+- Ground spikes in the third segment, placed on the ground where a running player must jump them or be reset.
+- A ground gap of about 3 units in the fourth segment that must be jumped; falling in resets the player.
+- A short rise of floating platforms in the fifth segment with at least two more coins.
+- A final flat stretch and the goal flag at about x = 58.
+- At least 8 coins in total across the course.
+
+Blocks and slabs are the exported `ground_block` (2 wide, 1 tall, 2 deep) and `platform_floating` (2 wide, 0.4 tall, 1.2 deep) models, instanced or cloned per placement. Collision uses each placement's box (position and size from the course data), not mesh raycasting.
+
+## Controls and physics
+
+- Run: A and D, or the left and right arrow keys. Jump: Space or W. Restart after finishing: R.
+- Run speed about 6 units per second. Gravity about minus 22 units per second squared. Jump velocity set so the character clears about 1.6 units of height and a 3 unit gap at full run speed.
+- Physics advances in fixed steps (a fixed timestep with an accumulator, or substeps), so the same input sequence produces the same motion on every run and every machine. This determinism is a requirement, not a nicety: the automated browser pass depends on it.
+- Collision is axis aligned box against box. Falling onto a platform top lands the player on it; hitting a side stops horizontal movement; the player stands on ground and platform tops only.
+- Reset rule: touching a spike, or falling below y = minus 6, returns the player to the last position where it stood on a surface. Coins already collected stay collected. The timer keeps running across resets.
+- The timer starts on the first movement input and stops when the goal is reached.
+
+## The character in motion
+
+- The player model is `assets/player.glb` with its six named parts: `torso`, `head`, `arm_left`, `arm_right`, `leg_left`, `leg_right`.
+- Each limb is wrapped in a pivot group positioned at the limb's top end, so rotating the pivot swings the limb from the shoulder or hip.
+- While running, the arms and legs swing in opposite phase, amplitude proportional to run speed. While airborne the limbs hold a tucked pose. While idle the swing eases to rest. A slight torso bob while running is welcome.
+
+## Camera and scene
+
+- Side view camera with slight depth: the camera sits at about z = 9 and y = 2.4, looks at the player, and follows the player's x with a small lookahead in the facing direction. The angle never changes; this is a 2.5D presentation of a 3D scene.
+- Lighting: one hemisphere light plus one directional light are enough; flat materials from the assets carry the look.
+- Backdrop: simple geometry at two or more depths behind the course (for example muted boxes and slabs at z = minus 5 and z = minus 10 in the backdrop and stone tones of `design/tokens.json`), so camera movement produces real parallax. No image textures.
+- The scene background color is a soft sky tone derived from the palette (a lightened backdrop tone); the ground course reads clearly against it.
+
+## HUD and completion
+
+- A DOM HUD shows the coin count as collected of total (for example "Coins 3 / 9") and the elapsed timer, styled with the palette (coral and teal accents, dark slate text) in a clean sans serif.
+- Reaching the goal flag sets the finished state: the timer stops and a completion overlay appears with the coin count, the final time, and the restart hint (press R). R resets the course state (position, coins, timer) for another run.
+
+## Test hook
+
+The game exposes a small read and position hook for the automated checks, and nothing else depends on it:
+
+- `window.__platform25.getState()` returns an object with at least: `ready` (true once assets are loaded and the first frame has rendered), `x`, `y` (the player's position), `grounded`, `airborne`, `coins`, `totalCoins`, `started`, `finished`, `timeMs`.
+- `window.__platform25.warpTo(x)` places the player standing on the surface at the given x, keeping collected coins and the timer state. The browser check uses it once, to stand near the goal for the goal screenshot after the unassisted assertions have passed; the final approach to the flag and the flag touch itself use real key input.
+
+## Look
+
+The look anchor is `design/DESIGN.md` and `design/tokens.json` from work order 1: clean, bold, readable; flat saturated colors; the coral and teal character readable against stone and grass platforms; gold coins; the coral flag on its white pole. The scene keeps the assets' own materials; the backdrop and HUD use the same palette tokens (coral #f97961, teal #218684, stone #a2998e, grass #76c448, gold #ffc72c, flag coral #f9614d, backdrop #424d59). Reviewer-design judges the run's screenshots against this anchor: palette fidelity, the fixed side camera with depth, a readable course, and a HUD that does not fight the scene.
+
+## Verification (project checks)
+
+Project tests live under `tests/` and run with `npm test` (node --test). The work order 1 suite keeps passing unchanged. The new checks:
+
+- Static checks assert: `index.html` and the `src/` entry exist; the course data in the source references all six contracted asset paths; `package.json` declares three, vite and playwright.
+- The browser check (one test file, using Playwright):
+  1. Runs `npm run build`, serves `dist/` with `vite preview` on a fixed port, and launches Chromium headless with software WebGL flags (the runner has no GPU).
+  2. Collects every console error and page error from load onwards.
+  3. Loads the page and waits until `getState().ready` is true, then saves `evidence/play-spawn.png`.
+  4. Holds the right arrow key and polls `getState()`: the run must show x increasing, and the first coin collected (coins at least 1) from unassisted running.
+  5. While still holding the key, presses Space once and polls at a short interval: `airborne` must be observed true at least once, and afterwards `grounded` true again with x beyond the jump point (a jump and a landing, unassisted).
+  6. Saves `evidence/play-mid.png` after those assertions, mid traversal.
+  7. Calls `warpTo` once to stand a few units before the goal, holds the right arrow key, and requires `finished` to become true and the completion overlay to be visible in the DOM. Saves `evidence/play-goal.png` showing the overlay.
+  8. Requires the collected console and page error list to be empty. Zero errors is a hard requirement.
+- Screenshots land in `evidence/` at a viewport of 1280 by 720.
+
+## Requirements
+
+- R1: Only the six contracted assets from `assets/` are used for the character, course, hazard, pickup and goal. No external assets of any kind.
+- R2: The character's limbs are animated by rotating pivot groups at the limbs' top ends, addressed by the contracted part names.
+- R3: Physics is fixed timestep; scripted input is deterministic.
+- R4: The reset rule, the timer rule and the completion state behave exactly as specified above.
+- R5: The browser check passes with zero console errors, and the three screenshots exist in `evidence/`.
+- R6: The work order 1 suite (asset factory) still passes, and `npm run build` succeeds.
+
+## Scenarios
+
+- S1: Opening the built game shows the character standing at spawn, the course ahead, the HUD at zero coins, and the spawn screenshot matches that state.
+- S2: Holding the run key moves the character along plus X and collects the first coin without any jump.
+- S3: Pressing jump while running makes the character airborne and then grounded again further along the course.
+- S4: Touching a spike, or falling into the gap, returns the character to its last grounded position with its coins kept.
+- S5: Walking into the goal flag finishes the course: the timer stops and the completion overlay shows the coin count and the final time.
+- S6: The automated browser pass completes with zero console errors and writes play-spawn.png, play-mid.png and play-goal.png to evidence/.
+# Platform 2.5 design
+
+Anchor for design review of the asset factory. Source of truth for intent is
+`.openspec/specs/asset-factory/spec.md` (Look section); machine-readable values are in
+`design/tokens.json`, which match the colors used in `blender/*.py`.
+
+## Shape language
+- Clean, bold, readable silhouettes built only from bpy primitives (boxes, cylinders, cones) and modifiers such as bevel.
+- Chunky proportions; small bevels soften edges (torso 0.045, head 0.065) without adding detail.
+- The character is one standing figure of six separate named parts: torso, head, arm_left, arm_right, leg_left, leg_right.
+- Keep the head above the torso, arms beside it and legs below it; limb pivots sit at their top ends for animation. The standing figure is roughly 1.8 units tall.
+- Ground is a solid 2 wide × 1 tall × 2 deep block; the floating platform is a 2 wide × 0.4 tall × 1.2 deep slab.
+- The spike is a sharp cone or pyramid on a small base, about 0.8 tall, with an unmistakable hazard silhouette.
+- The coin is an upright disc about 0.6 across, with flat faces along exported ±Z. The goal is a pole about 2.2 tall with a triangular flag at the top.
+
+## Palette
+Flat, saturated, procedural colors (Principled BSDF base colors). Values are Blender linear; hex is sRGB.
+Use the linear RGB triples in `tokens.json` for shader inputs, with alpha 1.
+The hex swatches describe the same base colors in sRGB; lighting and the lineup's
+AgX view transform affect their rendered appearance. All materials use roughness
+0.48; metallic and emission strength default to zero unless specified in the tokens.
+
+| Asset | Part | Token | Hex |
+|---|---|---|---|
+| Character | torso, head | coral | #f97961 |
+| Character | arms, legs | teal | #218684 |
+| Ground block | sides | stone | #a2998e |
+| Ground block | top face | grass | #76c448 |
+| Floating platform | body | stone | #a2998e |
+| Floating platform | top | stoneTop (lighter) | #d0c8b8 |
+| Spike | all | steel (light steel gray) | #d3dde3 |
+| Coin | all | gold, metallic 0.65, emission 0.2 | #ffc72c |
+| Goal flag | pole | flagPole (white) | #f1f5f7 |
+| Goal flag | cloth | flagCoral (coral red) | #f9614d |
+| Lineup | ground plane | backdrop | #424d59 |
+
+## Quality bars
+- Readability: the coral/teal figure must stand out clearly against the stone and grass platforms.
+- Coin has a slight emissive feel from material values only; no bloom dependency.
+- No image textures, downloaded models or external files; scripts never import meshes or load images.
+- Every asset exports to `assets/*.glb` with its contracted node names, between 800 bytes and 5 MB.
+- The lineup render shows all six assets in a row: `evidence/asset-lineup.png`, 960x540, Cycles CPU, at most 64 samples.
+- Review the lineup for distinct silhouettes, visible contrasting top faces and a clearly readable hazard, pickup and goal. Scenario tests S1–S6 check the export and evidence contracts; visual acceptance belongs to the separate reviewer and human gate.
+{
+  "$description": "Platform 2.5 asset palette. 'linear' values are the exact Principled BSDF Base Color values used in blender/*.py; 'hex' is the sRGB equivalent.",
+  "color": {
+    "coral": {
+      "linear": [
+        0.95,
+        0.19,
+        0.12
+      ],
+      "hex": "#f97961",
+      "use": "player torso and head (blender/player.py)"
+    },
+    "teal": {
+      "linear": [
+        0.015,
+        0.24,
+        0.23
+      ],
+      "hex": "#218684",
+      "use": "player arms and legs (blender/player.py)"
+    },
+    "stone": {
+      "linear": [
+        0.36,
+        0.32,
+        0.27
+      ],
+      "hex": "#a2998e",
+      "use": "ground block sides, floating platform body"
+    },
+    "grass": {
+      "linear": [
+        0.18,
+        0.55,
+        0.065
+      ],
+      "hex": "#76c448",
+      "use": "ground block top face"
+    },
+    "stoneTop": {
+      "linear": [
+        0.63,
+        0.58,
+        0.48
+      ],
+      "hex": "#d0c8b8",
+      "use": "floating platform top"
+    },
+    "steel": {
+      "linear": [
+        0.65,
+        0.72,
+        0.77
+      ],
+      "hex": "#d3dde3",
+      "use": "spike",
+      "metallic": 0.55
+    },
+    "gold": {
+      "linear": [
+        1.0,
+        0.57,
+        0.025
+      ],
+      "hex": "#ffc72c",
+      "use": "coin",
+      "metallic": 0.65,
+      "emissionStrength": 0.2
+    },
+    "flagPole": {
+      "linear": [
+        0.88,
+        0.91,
+        0.93
+      ],
+      "hex": "#f1f5f7",
+      "use": "goal flag pole",
+      "metallic": 0.15
+    },
+    "flagCoral": {
+      "linear": [
+        0.95,
+        0.12,
+        0.075
+      ],
+      "hex": "#f9614d",
+      "use": "goal flag cloth"
+    },
+    "backdrop": {
+      "linear": [
+        0.055,
+        0.075,
+        0.1
+      ],
+      "hex": "#424d59",
+      "use": "lineup render ground plane (blender/render_lineup.py)"
+    }
+  },
+  "material": {
+    "roughness": 0.48,
+    "textures": false,
+    "shader": "Principled BSDF, flat procedural base color"
+  },
+  "shape": {
+    "language": "primitives and modifiers only; bold boxes and cylinders with small bevels",
+    "bevel": {
+      "torso": 0.045,
+      "head": 0.065
+    }
+  },
+  "render": {
+    "width": 960,
+    "height": 540,
+    "engine": "CYCLES",
+    "device": "CPU",
+    "maxSamples": 64
+  }
+}
+
+exec
+/bin/bash -lc "rg --files -g 'AGENTS.md' -g 'package.json' -g 'tests/**' -g 'src/**' -g 'index.html'" in /home/runner/work/platform25/platform25
+ succeeded in 0ms:
+tests/playable-slice-browser.test.js
+tests/playable-slice-static.test.js
+tests/asset-factory.test.js
+package.json
+
+exec
+/bin/bash -lc 'cat package.json tests/playable-slice-static.test.js tests/playable-slice-browser.test.js' in /home/runner/work/platform25/platform25
+ succeeded in 0ms:
+{"description":"A 2.5D web platformer with 3D assets produced by headless Blender scripts, built end to end with ANVIL.","name":"platform25","private":true,"scripts":{"build":"vite build","dev":"vite","preview":"vite preview","test":"node --test \"tests/**/*.test.js\""},"type":"module","version":"0.1.0"}// Static checks for the playable slice spec (.openspec/specs/playable-slice/spec.md), S1 to S6 support.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+function srcFiles(dir = path.join(root, 'src')) {
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? srcFiles(path.join(dir, e.name)) : /\.(js|mjs)$/.test(e.name) ? [path.join(dir, e.name)] : [],
+  );
+}
+const allSource = () => srcFiles().map((f) => fs.readFileSync(f, 'utf8')).join('\n');
+
+test('S1: index.html loads the game as a module from src/main.js', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.match(html, /<script[^>]+type="module"[^>]+src="\/?src\/main\.js"/);
+  assert.ok(fs.existsSync(path.join(root, 'src', 'main.js')), 'src/main.js missing');
+});
+
+test('R1: the source references all six contracted asset paths', () => {
+  const src = allSource();
+  for (const a of ['player', 'ground_block', 'platform_floating', 'spike', 'coin', 'goal_flag']) {
+    assert.ok(src.includes(`assets/${a}.glb`), `no reference to assets/${a}.glb in src/`);
+  }
+});
+
+test('R2: limb pivots address the contracted part names', () => {
+  const src = allSource();
+  for (const n of ['arm_left', 'arm_right', 'leg_left', 'leg_right']) {
+    assert.ok(src.includes(n), `src/ does not mention ${n}`);
+  }
+});
+
+test('Test hook: window.__platform25 with getState and warpTo exists in source', () => {
+  const src = allSource();
+  assert.match(src, /__platform25/);
+  assert.match(src, /getState/);
+  assert.match(src, /warpTo/);
+});
+
+test('R3: physics uses a fixed timestep', () => {
+  assert.match(allSource(), /fixed|accumulator|FIXED_DT|STEP/i);
+});
+
+test('package.json declares three, vite and playwright, and keeps the scripts', () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  assert.ok(pkg.dependencies?.three, 'three must be a dependency');
+  assert.ok(pkg.dependencies?.vite, 'vite must be a dependency');
+  assert.ok(pkg.devDependencies?.playwright, 'playwright must be a devDependency');
+  for (const s of ['dev', 'build', 'preview', 'test']) assert.ok(pkg.scripts?.[s], `script ${s} missing`);
+});
+// Browser check for the playable slice spec, scenarios S1 to S6.
+// Builds the game, serves dist/ with vite preview, plays it headless with scripted keys.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { spawn, execSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const evidence = path.join(root, 'evidence');
+const PORT = 4173;
+const URL = `http://127.0.0.1:${PORT}/`;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function waitForServer(timeoutMs = 30000) {
+  const end = Date.now() + timeoutMs;
+  while (Date.now() < end) {
+    try {
+      if ((await fetch(URL)).ok) return;
+    } catch {}
+    await sleep(250);
+  }
+  throw new Error('vite preview did not start');
+}
+
+async function pollUntil(page, pred, { timeout = 15000, interval = 50 } = {}) {
+  const end = Date.now() + timeout;
+  let s;
+  while (Date.now() < end) {
+    s = await page.evaluate(() => window.__platform25.getState());
+    if (pred(s)) return s;
+    await sleep(interval);
+  }
+  throw new Error(`condition not met in ${timeout}ms; last state ${JSON.stringify(s)}`);
+}
+
+test('S1-S6: build, play the opening, jump, collect, finish, zero console errors', { timeout: 240000 }, async () => {
+  execSync('npm run build', { cwd: root, stdio: 'inherit' });
+  fs.mkdirSync(evidence, { recursive: true });
+
+  const server = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort', '--host', '127.0.0.1'], {
+    cwd: root,
+    stdio: 'ignore',
+  });
+  let browser;
+  try {
+    await waitForServer();
+    const { chromium } = await import('playwright');
+    browser = await chromium.launch({
+      headless: true,
+      args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'],
+    });
+    const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    const errors = [];
+    page.on('console', (m) => m.type() === 'error' && errors.push(`console: ${m.text()}`));
+    page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
+
+    // S1: spawn state
+    await page.goto(URL);
+    await page.waitForFunction(() => window.__platform25?.getState().ready === true, null, { timeout: 60000 });
+    const spawn0 = await page.evaluate(() => window.__platform25.getState());
+    assert.equal(spawn0.coins, 0);
+    assert.ok(spawn0.totalCoins >= 8, `totalCoins ${spawn0.totalCoins} < 8`);
+    assert.ok(spawn0.grounded, 'player should stand at spawn');
+    assert.equal(spawn0.started, false);
+    assert.equal(spawn0.finished, false);
+    assert.ok(spawn0.x > 0 && spawn0.x < 3, `spawn x ${spawn0.x}`);
+    await page.screenshot({ path: path.join(evidence, 'play-spawn.png') });
+
+    // S2: run right, first coin with no jump
+    await page.keyboard.down('ArrowRight');
+    const moved = await pollUntil(page, (s) => s.x > spawn0.x + 1);
+    assert.ok(moved.x > spawn0.x, 'x must increase while running');
+    const coined = await pollUntil(page, (s) => s.coins >= 1);
+    assert.ok(coined.coins >= 1);
+    assert.ok(coined.started, 'timer starts on first movement');
+
+    // S3: jump and landing while still running
+    const jumpX = (await page.evaluate(() => window.__platform25.getState())).x;
+    await page.keyboard.press('Space');
+    await pollUntil(page, (s) => s.airborne === true, { interval: 10, timeout: 3000 });
+    const landed = await pollUntil(page, (s) => s.grounded === true && s.x > jumpX, { interval: 20, timeout: 5000 });
+    assert.ok(landed.x > jumpX, 'landed beyond the jump point');
+    await page.screenshot({ path: path.join(evidence, 'play-mid.png') });
+    await page.keyboard.up('ArrowRight');
+
+    // S5: warp near the goal, finish with real key input
+    await page.evaluate(() => window.__platform25.warpTo(54));
+    await page.keyboard.down('ArrowRight');
+    const done = await pollUntil(page, (s) => s.finished === true, { timeout: 20000 });
+    await page.keyboard.up('ArrowRight');
+    assert.ok(done.timeMs > 0);
+    const t1 = (await page.evaluate(() => window.__platform25.getState())).timeMs;
+    await sleep(300);
+    const t2 = (await page.evaluate(() => window.__platform25.getState())).timeMs;
+    assert.equal(t1, t2, 'timer stops at the goal');
+    const body = await page.evaluate(() => document.body.innerText);
+    assert.match(body, /R/, 'overlay shows a restart hint');
+    assert.match(body, new RegExp(`${done.coins}`), 'overlay shows the coin count');
+    await page.screenshot({ path: path.join(evidence, 'play-goal.png') });
+
+    for (const f of ['play-spawn.png', 'play-mid.png', 'play-goal.png']) {
+      assert.ok(fs.statSync(path.join(evidence, f)).size > 5000, `${f} missing or empty`);
+    }
+    assert.deepEqual(errors, [], `console/page errors: ${errors.join(' | ')}`);
+  } finally {
+    await browser?.close();
+    server.kill();
+  }
+});
+
+exec
+/bin/bash -lc 'git status --short; cat tests/asset-factory.test.js' in /home/runner/work/platform25/platform25
+ succeeded in 0ms:
+?? runs/wo-gh-2/
+?? tests/playable-slice-browser.test.js
+?? tests/playable-slice-static.test.js
+// Tests for the asset factory spec (.openspec/specs/asset-factory/spec.md), scenarios S1 to S6.
+// They read the exported files only; no Blender is needed at test time.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const assetsDir = path.join(root, 'assets');
+const blenderDir = path.join(root, 'blender');
+const lineupPath = path.join(root, 'evidence', 'asset-lineup.png');
+
+const ASSETS = {
+  'player.glb': ['torso', 'head', 'arm_left', 'arm_right', 'leg_left', 'leg_right'],
+  'ground_block.glb': ['ground_block'],
+  'platform_floating.glb': ['platform_floating'],
+  'spike.glb': ['spike'],
+  'coin.glb': ['coin'],
+  'goal_flag.glb': ['goal_flag'],
+};
+
+function readGltfJson(file) {
+  const buf = fs.readFileSync(path.join(assetsDir, file));
+  assert.equal(buf.toString('ascii', 0, 4), 'glTF', `${file} is not a binary glTF`);
+  const length = buf.readUInt32LE(8);
+  assert.equal(length, buf.length, `${file} header length mismatch`);
+  const chunkLength = buf.readUInt32LE(12);
+  assert.equal(buf.readUInt32LE(16), 0x4e4f534a, `${file} first chunk is not JSON`);
+  return JSON.parse(buf.toString('utf8', 20, 20 + chunkLength));
+}
+
+function nodeNames(file) {
+  return (readGltfJson(file).nodes ?? []).map((n) => n.name);
+}
+
+test('S1: every asset exists and is non-empty', () => {
+  for (const file of Object.keys(ASSETS)) {
+    const p = path.join(assetsDir, file);
+    assert.ok(fs.existsSync(p), `${file} is missing`);
+    assert.ok(fs.statSync(p).size > 0, `${file} is empty`);
+  }
+});
+
+test('S2: player.glb has its six named parts as separate nodes', () => {
+  const names = nodeNames('player.glb');
+  for (const part of ASSETS['player.glb']) {
+    assert.equal(names.filter((n) => n === part).length, 1, `expected exactly one node named ${part}`);
+  }
+});
+
+test('S3: each platform set glb has a node with its own name', () => {
+  for (const [file, expected] of Object.entries(ASSETS)) {
+    if (file === 'player.glb') continue;
+    assert.ok(nodeNames(file).includes(expected[0]), `${file} has no node named ${expected[0]}`);
+  }
+});
+
+test('S4: every glb is between 800 bytes and 5 MB', () => {
+  for (const file of Object.keys(ASSETS)) {
+    const size = fs.statSync(path.join(assetsDir, file)).size;
+    assert.ok(size >= 800, `${file} is too small (${size} bytes)`);
+    assert.ok(size <= 5 * 1024 * 1024, `${file} is too large (${size} bytes)`);
+  }
+});
+
+test('S5: lineup render is a 960x540 PNG', () => {
+  assert.ok(fs.existsSync(lineupPath), 'evidence/asset-lineup.png is missing');
+  const buf = fs.readFileSync(lineupPath);
+  assert.deepEqual([...buf.subarray(0, 8)], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 'not a PNG');
+  assert.equal(buf.toString('ascii', 12, 16), 'IHDR');
+  assert.equal(buf.readUInt32BE(16), 960, 'width');
+  assert.equal(buf.readUInt32BE(20), 540, 'height');
+});
+
+test('S6: no script imports external assets and no binary files sit under blender/', () => {
+  assert.ok(fs.existsSync(blenderDir), 'blender/ is missing');
+  const files = fs.readdirSync(blenderDir, { recursive: true, withFileTypes: true }).filter((e) => e.isFile());
+  assert.ok(files.length > 0, 'blender/ has no files');
+  const banned = [/import_scene/, /image\.load/, /bpy\.data\.images\.load/];
+  for (const entry of files) {
+    const p = path.join(entry.parentPath ?? entry.path, entry.name);
+    const rel = path.relative(root, p);
+    const buf = fs.readFileSync(p);
+    assert.ok(!buf.includes(0), `${rel} looks like a binary file`);
+    assert.ok(/\.(py|md|txt|json)$/.test(entry.name), `${rel} is not a script or text file`);
+    const text = buf.toString('utf8');
+    for (const re of banned) assert.ok(!re.test(text), `${rel} matches banned pattern ${re}`);
+  }
+});
+
+codex
+The supplied browser test covers the opening run, jump, coin pickup, and goal finish. I’ll also implement the specified hazard resets, platform collisions, and restart behavior, with the course layout in a separate data table.
+
+exec
+/bin/bash -lc 'mkdir -p src
+npm install three vite && npm install --save-dev playwright' in /home/runner/work/platform25/platform25
+ succeeded in 6913ms:
+
+added 16 packages, and audited 17 packages in 6s
+
+8 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+added 4 packages, and audited 21 packages in 1s
+
+9 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+exec
+/bin/bash -lc "cat > index.html <<'EOF'
+<"'!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Platform 2.5</title>
+</head>
+<body>
+  <main id="game" aria-label="Platform 2.5 game"></main>
+  <header><div class="brand">PLATFORM <strong>2.5</strong><small>A little course. A running start.</small></div><div class="stats"><span id="coins">Coins 0 / 9</span><span id="timer">0.00 s</span></div></header>
+  <footer><span>A / D or ← / → <b>Run</b></span><span>Space / W <b>Jump</b></span><span>Reach the coral flag</span></footer>
+  <div id="loading" role="status">Building your little world…</div>
+  <section id="completion" hidden aria-label="Course complete"><div><p class="eyebrow">FINISH LINE / 60 METRES</p><h1>Course complete.</h1><p id="result"></p><p class="restart">Press <kbd>R</kbd> to run again</p></div></section>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
+EOF
+cat > src/style.css <<'"'EOF'
+:root{font-family:Arial,Helvetica,sans-serif;color:#424d59;background:#d9e2e6;font-synthesis:none}*{box-sizing:border-box}body{margin:0;overflow:hidden}canvas{display:block;width:100%;height:100%}#game{position:fixed;inset:0}header{position:fixed;top:32px;left:40px;right:40px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none}.brand{font-size:23px;font-weight:800;letter-spacing:3px}.brand strong{color:#218684}.brand small{display:block;font-size:12px;font-weight:400;letter-spacing:1px;margin-top:9px}.stats{display:flex;gap:24px;background:#ffffffd9;border-top:4px solid #f97961;padding:17px 24px;border-radius:4px;font-weight:700;font-variant-numeric:tabular-nums}#coins{color:#218684}#timer{min-width:75px;text-align:right}footer{position:fixed;bottom:28px;left:40px;right:40px;display:flex;gap:30px;font-size:13px}footer b{margin-left:8px}footer span:last-child{margin-left:auto;color:#218684}#loading{position:fixed;top:45%;width:100%;text-align:center}#completion{position:fixed;inset:0;background:#424d5966;display:grid;place-items:center}#completion[hidden]{display:none}#completion>div{background:#f6f5ef;padding:48px 60px;border-radius:8px;border-top:7px solid #f97961;box-shadow:0 24px 70px #263b4140;text-align:center}.eyebrow{font-size:11px;letter-spacing:3px;color:#218684;font-weight:bold}h1{font-size:42px;letter-spacing:-1px;margin:20px 0}#result{font-size:20px;font-variant-numeric:tabular-nums}.restart{margin-top:32px;font-size:14px}kbd{background:#218684;color:white;border-radius:4px;padding:7px 11px;margin:0 5px}
+EOF
+cat > src/course.js <<'EOF'
+// Asset URLs are resolved by Vite into the build, never fetched externally.
+export const assets = {
+  player: new URL('../assets/player.glb', import.meta.url).href,
+  ground_block: new URL('../assets/ground_block.glb', import.meta.url).href,
+  platform_floating: new URL('../assets/platform_floating.glb', import.meta.url).href,
+  spike: new URL('../assets/spike.glb', import.meta.url).href,
+  coin: new URL('../assets/coin.glb', import.meta.url).href,
+  goal_flag: new URL('../assets/goal_flag.glb', import.meta.url).href,
+};
+const ground = (x) => ({ asset: 'ground_block', x, y: -1, size: [2, 1, 2], solid: true });
+const platform = (x, top) => ({ asset: 'platform_floating', x, y: top - 0.4, size: [2, 0.4, 1.2], solid: true });
+const coin = (x, y) => ({ asset: 'coin', x, y, size: [0.6, 0.6, 0.15] });
+// Positions are bottom-centred; coin y denotes its centre instead.
+export const course = [
+  // 1. Fourteen units of flat opening, including the unassisted first pickup.
+  ...[1, 3, 5, 7, 9, 11, 13].map(ground),
+  coin(5, 1.2), coin(11, 1.2),
+  // 2. Shallow pit and a raised stepping stone.
+  { ...ground(15), y: -3 }, { ...ground(17), y: -3 },
+  platform(16, 1.2), coin(16, 2.4),
+  // 3. Ground hazards. Jump from the approach to clear the spikes.
+  ...[19, 21, 23, 25, 27, 29].map(ground),
+  { asset: 'spike', x: 23, y: 0, size: [0.8, 0.8, 0.8] },
+  { asset: 'spike', x: 24, y: 0, size: [0.8, 0.8, 0.8] },
+  coin(23.5, 2.4), coin(28, 1.2),
+  // 4. Three-unit gap: x = 30 to 33, with no floor beneath.
+  ...[34, 36, 38].map(ground), coin(35, 1.2),
+  // 5. Rising platforms, each within one running jump.
+  platform(40, 0.8), platform(43, 1.6), platform(46, 2.4),
+  coin(43, 2.8), coin(46, 3.6),
+  // 6. Final flat and flag.
+  ...[49, 51, 53, 55, 57, 59].map(ground), coin(52, 1.2),
+  { asset: 'goal_flag', x: 58, y: 0, size: [0.8, 2.2, 0.4] },
+];
+EOF
+cat > src/physics.js <<'EOF'
+import { course } from './course.js';
+export const FIXED_DT = 1 / 120;
+const WIDTH = 0.6, HEIGHT = 1.8;
+const solids = course.filter(p => p.solid);
+const hazards = course.filter(p => p.asset === 'spike');
+const pickups = course.filter(p => p.asset === 'coin');
+const goal = course.find(p => p.asset === 'goal_flag');
+const overlapsX = (x, p) => Math.abs(x - p.x) < (WIDTH + p.size[0]) / 2 - 1e-7;
+const overlaps = (s, p) => overlapsX(s.x, p) && s.y < p.y + p.size[1] && s.y + HEIGHT > p.y;
+export function createGame() {
+  const s = {};
+  let checkpoint;
+  function restart() {
+    Object.assign(s, { x: 1, y: 0, vx: 0, vy: 0, grounded: true, started: false, finished: false, timeMs: 0, facing: 1, collected: new Set() });
+    checkpoint = { x: 1, y: 0 };
+  }
+  function reset() { Object.assign(s, checkpoint, { vx: 0, vy: 0, grounded: true }); }
+  function warpTo(x) {
+    const surfaces = solids.filter(p => Math.abs(x - p.x) <= p.size[0] / 2);
+    if ("'!Number.isFinite(x) || !surfaces.length) return;
+    s.x = x; s.y = Math.max(...surfaces.map(p => p.y + p.size[1]));
+    s.vx = s.vy = 0; s.grounded = true;
+    checkpoint = { x: s.x, y: s.y };
+  }
+  function step(direction, jump) {
+    if (s.finished) return;
+    if (direction || jump) s.started = true;
+    if (s.started) s.timeMs += FIXED_DT * 1000;
+    s.vx = direction * 6;
+    if (direction) s.facing = direction;
+    if (jump && s.grounded) { s.vy = 8.6; s.grounded = false; }
+    s.x += s.vx * FIXED_DT;
+    for (const p of solids) {
+      if (overlaps(s, p)) {
+        s.x = p.x - Math.sign(s.vx) * (p.size[0] + WIDTH) / 2;
+        s.vx = 0;
+      }
+    }
+    const oldY = s.y;
+    s.vy -= 22 * FIXED_DT;
+    s.y += s.vy * FIXED_DT;
+    s.grounded = false;
+    for (const p of solids) {
+      if (!overlapsX(s.x, p)) continue;
+      const top = p.y + p.size[1];
+      if (s.vy <= 0 && oldY >= top - 1e-7 && s.y <= top) {
+        s.y = top; s.vy = 0; s.grounded = true;
+      } else if (s.vy > 0 && oldY + HEIGHT <= p.y && s.y + HEIGHT >= p.y) {
+        s.y = p.y - HEIGHT; s.vy = 0;
+      }
+    }
+    if (s.y < -6 || hazards.some(p => overlaps(s, p))) { reset(); return; }
+    // Record only a non-hazardous grounded position, before the next step.
+    if (s.grounded) checkpoint = { x: s.x, y: s.y };
+    pickups.forEach((p, i) => {
+      if (Math.abs(s.x - p.x) < 0.6 && s.y < p.y + 0.3 && s.y + HEIGHT > p.y - 0.3) s.collected.add(i);
+    });
+    if (overlaps(s, goal)) s.finished = true;
+  }
+  restart();
+  return { s, step, restart, warpTo, totalCoins: pickups.length };
+}
+EOF' in /home/runner/work/platform25/platform25
+ succeeded in 0ms:
+exec
+/bin/bash -lc "cat > src/main.js <<'EOF'
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { assets, course } from './course.js';
+import { createGame, FIXED_DT } from './physics.js';
+import './style.css';
+
+const game = createGame();
+const { s } = game;
+let ready = false;
+window.__platform25 = {
+  getState: () => ({ ready, x: s.x, y: s.y, grounded: s.grounded, airborne: "'!s.grounded,
+    coins: s.collected.size, totalCoins: game.totalCoins, started: s.started, finished: s.finished, timeMs: s.timeMs }),
+  warpTo: (x) => game.warpTo(x),
+};
+const keys = new Set();
+let jumpQueued = false;
+const controls = ['"'KeyA', 'KeyD', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyW', 'KeyR'];
+addEventListener('keydown', e => {
+  if ("'!controls.includes(e.code)) return;
+  e.preventDefault();
+  if (!e.repeat && (e.code === '"'Space' || e.code === 'KeyW')) jumpQueued = true;
+  if (e.code === 'KeyR' && s.finished) { game.restart(); keys.clear(); jumpQueued = false; }
+  keys.add(e.code);
+});
+addEventListener('keyup', e => keys.delete(e.code));
+addEventListener('blur', () => { keys.clear(); jumpQueued = false; });
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#d9e2e6');
+scene.fog = new THREE.Fog('#d9e2e6', 22, 55);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+document.querySelector('#game').append(renderer.domElement);
+const camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 100);
+scene.add(new THREE.HemisphereLight('#ffffff', '#a2998e', 2.4));
+const sun = new THREE.DirectionalLight('#fff5e6', 3);
+sun.position.set(-3, 8, 5);
+scene.add(sun);
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+// Two layers of simple palette-derived scenery give real depth and parallax.
+for (const [z, color, spacing] of [[-5, '#a7b5b7', 7], [-10, '#bcc6c7', 10]]) {
+  const material = new THREE.MeshLambertMaterial({ color });
+  for (let i = -3; i < 12; i++) {
+    const height = 2 + ((i + 30) * 7 % 5) * 0.8;
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(spacing * 0.65, height, 1.6), material);
+    mesh.position.set(i * spacing, height / 2 - 2, z);
+    scene.add(mesh);
+  }
+}
+
+const loader = new GLTFLoader();
+const models = Object.fromEntries(await Promise.all(Object.entries(assets).map(async ([name, url]) => [name, (await loader.loadAsync(url)).scene])));
+// Normalize each exported asset's origin to its bottom centre without changing materials or scale.
+function modelAt(name, x, y) {
+  const model = models[name].clone(true);
+  const bounds = new THREE.Box3().setFromObject(model);
+  const centre = bounds.getCenter(new THREE.Vector3());
+  model.position.sub(new THREE.Vector3(centre.x, bounds.min.y, centre.z));
+  const root = new THREE.Group(); root.add(model); root.position.set(x, y, 0); scene.add(root);
+  return root;
+}
+const coins = [];
+for (const p of course) {
+  const root = modelAt(p.asset, p.x, p.asset === 'coin' ? p.y - 0.3 : p.y);
+  if (p.asset === 'coin') coins.push(root);
+}
+const player = modelAt('player', s.x, s.y);
+const pivots = [];
+player.updateMatrixWorld(true);
+for (const name of ['arm_left', 'arm_right', 'leg_left', 'leg_right']) {
+  const limb = player.getObjectByName(name);
+  const bounds = new THREE.Box3().setFromObject(limb);
+  const top = bounds.getCenter(new THREE.Vector3()); top.y = bounds.max.y;
+  const pivot = new THREE.Group();
+  pivot.position.copy(player.worldToLocal(top));
+  player.add(pivot); player.updateMatrixWorld(true);
+  pivot.attach(limb); // Preserve the exported transform while moving its rotation origin to the joint.
+  pivots.push(pivot);
+}
+const coinLabel = document.querySelector('#coins');
+const timerLabel = document.querySelector('#timer');
+const overlay = document.querySelector('#completion');
+let previous = performance.now(), accumulator = 0, phase = 0, cameraX = 2.3;
+function frame(now) {
+  const elapsed = Math.min((now - previous) / 1000, 0.1); previous = now;
+  accumulator += elapsed;
+  while (accumulator >= FIXED_DT) {
+    const direction = Number(keys.has('KeyD') || keys.has('ArrowRight')) - Number(keys.has('KeyA') || keys.has('ArrowLeft'));
+    game.step(direction, jumpQueued);
+    jumpQueued = false;
+    accumulator -= FIXED_DT;
+    if ("'!s.finished) phase += Math.abs(s.vx) * FIXED_DT * 2;
+  }
+  player.position.set(s.x, s.y, 0);
+  // Rotate the front-facing figure to a readable three-quarter running profile.
+  player.rotation.y = s.facing * 0.65;
+  const swing = Math.sin(phase) * 0.65 * Math.abs(s.vx) / 6;
+  pivots.forEach((pivot, i) => {
+    const pose = !s.grounded ? [0.55, 0.55, -0.65, -0.35][i] : (s.finished ? 0 : swing * [1, -1, -1, 1][i]);
+    pivot.rotation.x = THREE.MathUtils.lerp(pivot.rotation.x, pose, 1 - Math.exp(-18 * elapsed));
+  });
+  coins.forEach((coin, i) => { coin.visible = !s.collected.has(i); coin.rotation.y = now / 900; });
+  cameraX = THREE.MathUtils.lerp(cameraX, s.x + s.facing * 1.3, 1 - Math.exp(-6 * elapsed));
+  camera.position.set(cameraX, 2.4, 9);
+  camera.lookAt(cameraX, 1.1, 0);
+  coinLabel.textContent = `Coins ${s.collected.size} / ${game.totalCoins}`;
+  timerLabel.textContent = `${(s.timeMs / 1000).toFixed(2)} s`;
+  overlay.hidden = !s.finished;
+  if (s.finished) document.querySelector('"'#result').textContent = "'`${s.collected.size} / ${game.totalCoins} coins · ${(s.timeMs / 1000).toFixed(2)} seconds`;
+  renderer.render(scene, camera);
+  if (!ready) { ready = true; document.querySelector('"'#loading').hidden = true; }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+EOF
+npm test" in /home/runner/work/platform25/platform25
+ exited 1 in 889ms:
+
+> platform25@0.1.0 test
+> node --test "tests/**/*.test.js"
+
+TAP version 13
+# Subtest: S1: every asset exists and is non-empty
+ok 1 - S1: every asset exists and is non-empty
+  ---
+  duration_ms: 0.699782
+  type: 'test'
+  ...
+# Subtest: S2: player.glb has its six named parts as separate nodes
+ok 2 - S2: player.glb has its six named parts as separate nodes
+  ---
+  duration_ms: 0.935817
+  type: 'test'
+  ...
+# Subtest: S3: each platform set glb has a node with its own name
+ok 3 - S3: each platform set glb has a node with its own name
+  ---
+  duration_ms: 0.371008
+  type: 'test'
+  ...
+# Subtest: S4: every glb is between 800 bytes and 5 MB
+ok 4 - S4: every glb is between 800 bytes and 5 MB
+  ---
+  duration_ms: 0.2192
+  type: 'test'
+  ...
+# Subtest: S5: lineup render is a 960x540 PNG
+ok 5 - S5: lineup render is a 960x540 PNG
+  ---
+  duration_ms: 0.728746
+  type: 'test'
+  ...
+# Subtest: S6: no script imports external assets and no binary files sit under blender/
+ok 6 - S6: no script imports external assets and no binary files sit under blender/
+  ---
+  duration_ms: 1.131301
+  type: 'test'
+  ...
+# > platform25@0.1.0 build
+# > vite build
+# vite v8.3.5 building client environment for production...
+# transforming...
+# ✓ 12 modules transformed.
+# rendering chunks...
+# computing gzip size...
+# dist/index.html                       1.07 kB │ gzip:   0.62 kB
+# dist/assets/coin-DxSfkXzC.glb         8.25 kB
+# dist/assets/goal_flag-ChzmklLm.glb    9.70 kB
+# dist/assets/player-D0urEMFS.glb      47.20 kB
+# dist/assets/index-rLhU-NfG.css        1.57 kB │ gzip:   0.70 kB
+# dist/assets/index-C9sOjX_k.js       635.35 kB │ gzip: 159.71 kB
+# [plugin builtin:vite-reporter] 
+# (!) Some chunks are larger than 500 kB after minification. Consider:
+# - Using dynamic import() to code-split the application
+# - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+# - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+# ✓ built in 144ms
+# Subtest: S1-S6: build, play the opening, jump, collect, finish, zero console errors
+not ok 7 - S1-S6: build, play the opening, jump, collect, finish, zero console errors
+  ---
+  duration_ms: 872.926528
+  type: 'test'
+  location: '/home/runner/work/platform25/platform25/tests/playable-slice-browser.test.js:38:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    browserType.launch: Executable doesn't exist at /home/runner/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell
+    ╔════════════════════════════════════════════════════════════╗
+    ║ Looks like Playwright was just installed or updated.       ║
+    ║ Please run the following command to download new browsers: ║
+    ║                                                            ║
+    ║     npx playwright install                                 ║
+    ║                                                            ║
+    ║ <3 Playwright Team                                         ║
+    ╚════════════════════════════════════════════════════════════╝
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    TestContext.<anonymous> (/home/runner/work/platform25/platform25/tests/playable-slice-browser.test.js:50:30)
+  ...
+# Subtest: S1: index.html loads the game as a module from src/main.js
+ok 8 - S1: index.html loads the game as a module from src/main.js
+  ---
+  duration_ms: 0.870089
+  type: 'test'
+  ...
+# Subtest: R1: the source references all six contracted asset paths
+ok 9 - R1: the source references all six contracted asset paths
+  ---
+  duration_ms: 1.139825
+  type: 'test'
+  ...
+# Subtest: R2: limb pivots address the contracted part names
+ok 10 - R2: limb pivots address the contracted part names
+  ---
+  duration_ms: 0.360252
+  type: 'test'
+  ...
+# Subtest: Test hook: window.__platform25 with getState and warpTo exists in source
+ok 11 - Test hook: window.__platform25 with getState and warpTo exists in source
+  ---
+  duration_ms: 0.299671
+  type: 'test'
+  ...
+# Subtest: R3: physics uses a fixed timestep
+ok 12 - R3: physics uses a fixed timestep
+  ---
+  duration_ms: 0.268895
+  type: 'test'
+  ...
+# Subtest: package.json declares three, vite and playwright, and keeps the scripts
+ok 13 - package.json declares three, vite and playwright, and keeps the scripts
+  ---
+  duration_ms: 0.188033
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 12
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 936.372792
+
+exec
+/bin/bash -lc 'npx playwright install chromium' in /home/runner/work/platform25/platform25
+exec
+/bin/bash -lc "python3 - <<'PY'
+p='src/course.js'
+s=open(p).read().replace('{ ...ground(15), y: -3 }, { ...ground(17), y: -3 }','{ ...ground(15), y: -1.8 }, { ...ground(17), y: -1.8 }')
+open(p,'w').write(s)
+PY
+cat > tests/playable-slice-physics.test.js <<'EOF'
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { createGame } from '../src/physics.js';
+
+const run = (g, n, direction = 1) => { for (let i = 0; i < n; i++) g.step(direction, false); };
+
+test('S4: spike and fall resets retain coins and keep the timer running', () => {
+  const g = createGame();
+  run(g, 80);
+  assert.equal(g.s.collected.size, 1);
+  g.warpTo(22);
+  let reset = false;
+  for (let i = 0; i < 30; i++) {
+    const x = g.s.x;
+    g.step(1, false);
+    if (g.s.x === x) { reset = true; break; }
+  }
+  assert.ok(reset, 'spike returns to previous safe grounded position');
+  assert.equal(g.s.collected.size, 1);
+  const before = g.s.timeMs;
+  g.warpTo(29);
+  run(g, 35);
+  assert.ok("'!g.s.grounded);
+  run(g, 150, 0);
+  assert.ok(g.s.grounded);
+  assert.ok(g.s.x >= 29 && g.s.x < 30.3);
+  assert.equal(g.s.collected.size, 1);
+  assert.ok(g.s.timeMs > before);
+});
+
+test('"'S3: platform sides block movement and a jump lands on the platform top', () => {
+  const g = createGame();
+  g.warpTo(38);
+  run(g, 30);
+  assert.ok(g.s.x <= 38.7);
+  g.step(1, true);
+  run(g, 24);
+  run(g, 100, 0);
+  assert.ok(g.s.grounded);
+  assert.equal(g.s.y, 0.8);
+});
+
+test('R3/R4: identical fixed input sequences agree; finish freezes time and restart clears state', () => {
+  const a = createGame(), b = createGame();
+  for (const g of [a, b]) {
+    run(g, 80); g.step(1, true); run(g, 90);
+  }
+  assert.deepEqual(a.s, b.s);
+  a.warpTo(54); run(a, 100);
+  assert.ok(a.s.finished);
+  const time = a.s.timeMs;
+  run(a, 100);
+  assert.equal(a.s.timeMs, time);
+  a.restart();
+  assert.equal(a.s.x, 1);
+  assert.equal(a.s.collected.size, 0);
+  assert.equal(a.s.timeMs, 0);
+  assert.equal(a.s.started, false);
+  assert.equal(a.s.finished, false);
+});
+EOF
+node --test tests/playable-slice-physics.test.js" in /home/runner/work/platform25/platform25
+ succeeded in 0ms:
+TAP version 13
+# Subtest: S4: spike and fall resets retain coins and keep the timer running
+ok 1 - S4: spike and fall resets retain coins and keep the timer running
+  ---
+  duration_ms: 4.804176
+  type: 'test'
+  ...
+# Subtest: S3: platform sides block movement and a jump lands on the platform top
+ok 2 - S3: platform sides block movement and a jump lands on the platform top
+  ---
+  duration_ms: 1.134497
+  type: 'test'
+  ...
+# Subtest: R3/R4: identical fixed input sequences agree; finish freezes time and restart clears state
+ok 3 - R3/R4: identical fixed input sequences agree; finish freezes time and restart clears state
+  ---
+  duration_ms: 1.694209
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 57.191359
+
+codex
+The implementation builds, and the asset and static checks pass. Added physics checks also pass for resets, platform landing, deterministic input, timer stopping, and restart. The browser check needs Chromium installed; that installation is running before I rerun the suite and capture evidence.
+
+ succeeded in 5895ms:
+Downloading Chrome for Testing 156.0.8078.4 (playwright chromium v1248) from https://cdn.playwright.dev/builds/cft/156.0.8078.4/linux64/chrome-linux64.zip
+|                                                                                |   0% of 191.1 MiB
+|■■■■■■■■                                                                        |  10% of 191.1 MiB
+|■■■■■■■■■■■■■■■■                                                                |  20% of 191.1 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 191.1 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 191.1 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 191.1 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 191.1 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 191.1 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 191.1 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 191.1 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 191.1 MiB
+Chrome for Testing 156.0.8078.4 (playwright chromium v1248) downloaded to /home/runner/.cache/ms-playwright/chromium-1248
+Downloading FFmpeg (playwright ffmpeg v1013) from https://cdn.playwright.dev/dbazure/download/playwright/builds/ffmpeg/1013/ffmpeg-linux.zip
+|                                                                                |   0% of 2.2 MiB
+|■■■■■■■■                                                                        |  10% of 2.2 MiB
+|■■■■■■■■■■■■■■■■                                                                |  20% of 2.2 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 2.2 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 2.2 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 2.2 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 2.2 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 2.2 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 2.2 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 2.2 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 2.2 MiB
+FFmpeg (playwright ffmpeg v1013) downloaded to /home/runner/.cache/ms-playwright/ffmpeg-1013
+Downloading Chrome Headless Shell 156.0.8078.4 (playwright chromium-headless-shell v1248) from https://cdn.playwright.dev/builds/cft/156.0.8078.4/linux64/chrome-headless-shell-linux64.zip
+|                                                                                |   0% of 120 MiB
+|■■■■■■■■                                                                        |  10% of 120 MiB
+|■■■■■■■■■■■■■■■■                                                                |  20% of 120 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■                                                        |  30% of 120 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                                |  40% of 120 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                        |  50% of 120 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                                |  60% of 120 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                        |  70% of 120 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■                |  80% of 120 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■        |  90% of 120 MiB
+|■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■| 100% of 120 MiB
+Chrome Headless Shell 156.0.8078.4 (playwright chromium-headless-shell v1248) downloaded to /home/runner/.cache/ms-playwright/chromium_headless_shell-1248
+
+exec
+/bin/bash -lc 'npm test' in /home/runner/work/platform25/platform25
+ succeeded in 5723ms:
+
+> platform25@0.1.0 test
+> node --test "tests/**/*.test.js"
+
+TAP version 13
+# Subtest: S1: every asset exists and is non-empty
+ok 1 - S1: every asset exists and is non-empty
+  ---
+  duration_ms: 0.988557
+  type: 'test'
+  ...
+# Subtest: S2: player.glb has its six named parts as separate nodes
+ok 2 - S2: player.glb has its six named parts as separate nodes
+  ---
+  duration_ms: 1.56901
+  type: 'test'
+  ...
+# Subtest: S3: each platform set glb has a node with its own name
+ok 3 - S3: each platform set glb has a node with its own name
+  ---
+  duration_ms: 0.534474
+  type: 'test'
+  ...
+# Subtest: S4: every glb is between 800 bytes and 5 MB
+ok 4 - S4: every glb is between 800 bytes and 5 MB
+  ---
+  duration_ms: 0.29971
+  type: 'test'
+  ...
+# Subtest: S5: lineup render is a 960x540 PNG
+ok 5 - S5: lineup render is a 960x540 PNG
+  ---
+  duration_ms: 1.019504
+  type: 'test'
+  ...
+# Subtest: S6: no script imports external assets and no binary files sit under blender/
+ok 6 - S6: no script imports external assets and no binary files sit under blender/
+  ---
+  duration_ms: 1.599416
+  type: 'test'
+  ...
+# > platform25@0.1.0 build
+# > vite build
+# vite v8.3.5 building client environment for production...
+# transforming...
+# ✓ 12 modules transformed.
+# rendering chunks...
+# computing gzip size...
+# dist/index.html                       1.07 kB │ gzip:   0.62 kB
+# dist/assets/coin-DxSfkXzC.glb         8.25 kB
+# dist/assets/goal_flag-ChzmklLm.glb    9.70 kB
+# dist/assets/player-D0urEMFS.glb      47.20 kB
+# dist/assets/index-rLhU-NfG.css        1.57 kB │ gzip:   0.70 kB
+# dist/assets/index-DcfOTlp9.js       635.35 kB │ gzip: 159.71 kB
+# [plugin builtin:vite-reporter] 
+# (!) Some chunks are larger than 500 kB after minification. Consider:
+# - Using dynamic import() to code-split the application
+# - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+# - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+# ✓ built in 137ms
+# Subtest: S1-S6: build, play the opening, jump, collect, finish, zero console errors
+ok 7 - S1-S6: build, play the opening, jump, collect, finish, zero console errors
+  ---
+  duration_ms: 5719.743004
+  type: 'test'
+  ...
+# Subtest: S4: spike and fall resets retain coins and keep the timer running
+ok 8 - S4: spike and fall resets retain coins and keep the timer running
+  ---
+  duration_ms: 9.744167
+  type: 'test'
+  ...
+# Subtest: S3: platform sides block movement and a jump lands on the platform top
+ok 9 - S3: platform sides block movement and a jump lands on the platform top
+  ---
+  duration_ms: 1.750553
+  type: 'test'
+  ...
+# Subtest: R3/R4: identical fixed input sequences agree; finish freezes time and restart clears state
+ok 10 - R3/R4: identical fixed input sequences agree; finish freezes time and restart clears state
+  ---
+  duration_ms: 2.040815
+  type: 'test'
+  ...
+# Subtest: S1: index.html loads the game as a module from src/main.js
+ok 11 - S1: index.html loads the game as a module from src/main.js
+  ---
+  duration_ms: 0.795447
+  type: 'test'
+  ...
+# Subtest: R1: the source references all six contracted asset paths
+ok 12 - R1: the source references all six contracted asset paths
+  ---
+  duration_ms: 1.005302
+  type: 'test'
+  ...
+# Subtest: R2: limb pivots address the contracted part names
+ok 13 - R2: limb pivots address the contracted part names
+  ---
+  duration_ms: 0.289806
+  type: 'test'
+  ...
+# Subtest: Test hook: window.__platform25 with getState and warpTo exists in source
+ok 14 - Test hook: window.__platform25 with getState and warpTo exists in source
+  ---
+  duration_ms: 0.21227
+  type: 'test'
+  ...
+# Subtest: R3: physics uses a fixed timestep
+ok 15 - R3: physics uses a fixed timestep
+  ---
+  duration_ms: 0.180972
+  type: 'test'
+  ...
+# Subtest: package.json declares three, vite and playwright, and keeps the scripts
+ok 16 - package.json declares three, vite and playwright, and keeps the scripts
+  ---
+  duration_ms: 0.160812
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5778.095298
+
+exec
+/bin/bash -lc 'git diff --stat; git status --short' in /home/runner/work/platform25/platform25
+ succeeded in 0ms:
+ package-lock.json | 787 +++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ package.json      |   2 +-
+ 2 files changed, 787 insertions(+), 2 deletions(-)
+ M package-lock.json
+ M package.json
+?? evidence/play-goal.png
+?? evidence/play-mid.png
+?? evidence/play-spawn.png
+?? index.html
+?? runs/wo-gh-2/
+?? src/
+?? tests/playable-slice-browser.test.js
+?? tests/playable-slice-physics.test.js
+?? tests/playable-slice-static.test.js
+
+codex
+Implemented the playable course, controls, physics, limb animation, HUD, completion overlay, restart, and test hook.
+
+All 16 tests pass, including the unchanged asset suite. Build succeeds; browser reports zero errors. Three screenshots are saved in evidence/ for human review.
+tokens used
+38,542
+Implemented the playable course, controls, physics, limb animation, HUD, completion overlay, restart, and test hook.
+
+All 16 tests pass, including the unchanged asset suite. Build succeeds; browser reports zero errors. Three screenshots are saved in evidence/ for human review.

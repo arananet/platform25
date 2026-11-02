@@ -1,0 +1,29 @@
+{
+  "schema": "anvil/envelope@1",
+  "from_station": "reviewer-security",
+  "to_station": "reviewer-tests",
+  "work_order_id": "wo-gh-2",
+  "artifact_path": "runs/wo-gh-2/reviewer-security.output.md",
+  "status": "executed",
+  "created_at": "2026-10-30T17:43:01.127291+00:00",
+  "review": {
+    "station": "reviewer-security",
+    "verdict": "pass",
+    "findings": [
+      "No dynamic code or HTML sinks in src/ or index.html: no innerHTML, eval, Function or document.write. The only DOM text written is game numbers.",
+      "No runtime network use. Assets are bundled by Vite, the favicon is a data: URI, and there are no external scripts, fonts or CDNs, which matches the spec's no-downloads rule.",
+      "window.__platform25 (getState, warpTo) is the hook the spec requires. It exposes only game state and a position warp, no secrets, so the risk is accepted.",
+      "The key handler calls preventDefault only for the contracted control keys (A, D, arrows, Space, W, R).",
+      "Test harness is safe. vite preview binds 127.0.0.1 with --strictPort, and Chromium runs with its sandbox on, with no --no-sandbox and no disabled web security. The software WebGL flags are test-only. execSync and spawn use fixed strings with no user input.",
+      "Dependencies (three, vite, playwright) come from npm, pinned by package-lock.json with caret ranges. That is acceptable. Run npm audit before any later deployment, though this work order deploys nothing.",
+      "Low severity: the tests use fixed port 4173, so a local port collision would make them fail. That is a robustness issue, not a vulnerability.",
+      "The review is saved at runs/wo-gh-2/reviewer-security.output.md. I read the code and test sources but did not run the build or tests."
+    ]
+  },
+  "configured_model": "claude-sonnet-5-5",
+  "executor": {
+    "kind": "command",
+    "detail": "python3"
+  },
+  "executed_model": "claude-sonnet-5-5"
+}

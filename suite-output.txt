@@ -6,45 +6,124 @@ TAP version 13
 # Subtest: S1: every asset exists and is non-empty
 ok 1 - S1: every asset exists and is non-empty
   ---
-  duration_ms: 1.202067
+  duration_ms: 0.880171
   type: 'test'
   ...
 # Subtest: S2: player.glb has its six named parts as separate nodes
 ok 2 - S2: player.glb has its six named parts as separate nodes
   ---
-  duration_ms: 1.165568
+  duration_ms: 1.424929
   type: 'test'
   ...
 # Subtest: S3: each platform set glb has a node with its own name
 ok 3 - S3: each platform set glb has a node with its own name
   ---
-  duration_ms: 0.610125
+  duration_ms: 0.486981
   type: 'test'
   ...
 # Subtest: S4: every glb is between 800 bytes and 5 MB
 ok 4 - S4: every glb is between 800 bytes and 5 MB
   ---
-  duration_ms: 0.395562
+  duration_ms: 0.311177
   type: 'test'
   ...
 # Subtest: S5: lineup render is a 960x540 PNG
 ok 5 - S5: lineup render is a 960x540 PNG
   ---
-  duration_ms: 1.332451
+  duration_ms: 0.983036
   type: 'test'
   ...
 # Subtest: S6: no script imports external assets and no binary files sit under blender/
 ok 6 - S6: no script imports external assets and no binary files sit under blender/
   ---
-  duration_ms: 1.585977
+  duration_ms: 1.290537
   type: 'test'
   ...
-1..6
-# tests 6
+# > platform25@0.1.0 build
+# > vite build
+# [36mvite v8.3.5 [32mbuilding client environment for production...[36m[39m
+# transforming...
+# ✓ 12 modules transformed.
+# rendering chunks...
+# computing gzip size...
+# dist/index.html                       1.07 kB │ gzip:   0.62 kB
+# dist/assets/coin-DxSfkXzC.glb         8.25 kB
+# dist/assets/goal_flag-ChzmklLm.glb    9.70 kB
+# dist/assets/player-Cn5oOZ7Y.glb      47.20 kB
+# dist/assets/index-rLhU-NfG.css        1.57 kB │ gzip:   0.70 kB
+# dist/assets/index-DefXWRDG.js       635.35 kB │ gzip: 159.71 kB
+# [33m[plugin builtin:vite-reporter] 
+# (!) Some chunks are larger than 500 kB after minification. Consider:
+# - Using dynamic import() to code-split the application
+# - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+# - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+# [32m✓ built in 138ms[39m
+# Subtest: S1-S6: build, play the opening, jump, collect, finish, zero console errors
+ok 7 - S1-S6: build, play the opening, jump, collect, finish, zero console errors
+  ---
+  duration_ms: 5336.473792
+  type: 'test'
+  ...
+# Subtest: S4: spike and fall resets retain coins and keep the timer running
+ok 8 - S4: spike and fall resets retain coins and keep the timer running
+  ---
+  duration_ms: 10.31674
+  type: 'test'
+  ...
+# Subtest: S3: platform sides block movement and a jump lands on the platform top
+ok 9 - S3: platform sides block movement and a jump lands on the platform top
+  ---
+  duration_ms: 0.863106
+  type: 'test'
+  ...
+# Subtest: R3/R4: identical fixed input sequences agree; finish freezes time and restart clears state
+ok 10 - R3/R4: identical fixed input sequences agree; finish freezes time and restart clears state
+  ---
+  duration_ms: 3.225021
+  type: 'test'
+  ...
+# Subtest: S1: index.html loads the game as a module from src/main.js
+ok 11 - S1: index.html loads the game as a module from src/main.js
+  ---
+  duration_ms: 0.640802
+  type: 'test'
+  ...
+# Subtest: R1: the source references all six contracted asset paths
+ok 12 - R1: the source references all six contracted asset paths
+  ---
+  duration_ms: 0.9194
+  type: 'test'
+  ...
+# Subtest: R2: limb pivots address the contracted part names
+ok 13 - R2: limb pivots address the contracted part names
+  ---
+  duration_ms: 0.254042
+  type: 'test'
+  ...
+# Subtest: Test hook: window.__platform25 with getState and warpTo exists in source
+ok 14 - Test hook: window.__platform25 with getState and warpTo exists in source
+  ---
+  duration_ms: 0.185999
+  type: 'test'
+  ...
+# Subtest: R3: physics uses a fixed timestep
+ok 15 - R3: physics uses a fixed timestep
+  ---
+  duration_ms: 0.170126
+  type: 'test'
+  ...
+# Subtest: package.json declares three, vite and playwright, and keeps the scripts
+ok 16 - package.json declares three, vite and playwright, and keeps the scripts
+  ---
+  duration_ms: 0.19345
+  type: 'test'
+  ...
+1..16
+# tests 16
 # suites 0
-# pass 6
+# pass 16
 # fail 0
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 74.047293
+# duration_ms 5387.054622
